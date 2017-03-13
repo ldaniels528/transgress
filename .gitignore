@@ -1,0 +1,49 @@
+# Created by .ignore support plugin (hsz.mobi)
+### Scala template
+*.class
+*.log
+
+# sbt specific
+.cache
+.history
+.lib/
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+
+# Scala-IDE specific
+.scala_dependencies
+.worksheet
+
+# ENSIME specific
+.ensime_cache/
+.ensime
+### SBT template
+# Simple Build Tool
+# http://www.scala-sbt.org/release/docs/Getting-Started/Directories.html#configuring-version-control
+
+target/
+lib_managed/
+src_managed/
+project/boot/
+.history
+.cache
+
+broadway-web-client-fastopt.js
+broadway-web-client-fastopt.js.map
+broadway-web-client-launcher.js
+broadway-webapp-client-fastopt.js
+broadway-webapp-client-fastopt.js.map
+broadway-webapp-client-launcher.js
+broadway-webclient-fastopt.js
+broadway-webclient-fastopt.js.map
+broadway-webclient-launcher.js
+broadway-cli-fastopt.js
+broadway-cli-fastopt.js.map
+broadway-server-fastopt.js
+broadway-server-fastopt.js.map
+broadway-worker-fastopt.js
+broadway-worker-fastopt.js.map

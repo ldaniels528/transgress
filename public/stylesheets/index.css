@@ -1,0 +1,45 @@
+body {
+    margin-left: 10px;
+}
+
+.center {
+    text-align: left;
+}
+
+.left {
+    text-align: left;
+}
+
+.right {
+    text-align: right;
+}
+
+.error {
+    color: #ff0000;
+    font-weight: bold;
+}
+
+.stats {
+    color: #000080;
+    font-size: 9pt;
+}
+
+.title1 {
+    color: #0000ff;
+    font-size: 20pt;
+}
+
+.title2 {
+    color: #ff0000;
+    font-size: 20pt;
+}
+
+.title3 {
+    color: #00bb00;
+    font-size: 20pt;
+}
+
+.title4 {
+    color: #0000ff;
+    font-size: 20pt;
+}

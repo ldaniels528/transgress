@@ -1,0 +1,31 @@
+<div ng-controller="DashboardController" ng-init="init()">
+    <div>
+        <div class="jobs_shown">{{ jobs.length }} job(s) shown</div>
+        <table class="col-md-12">
+            <tr>
+                <th class="col-md-2 left">Job Processor</th>
+                <th class="col-md-4 left">File / Input</th>
+                <th class="col-md-6 center">Status</th>
+            </tr>
+            <tr ng-repeat="job in jobs">
+                <td>
+                    <img ng-src="{{ getStatusBulb(job) }}"> {{ job.name }}
+                </td>
+                <td>{{ job.input }}</td>
+                <td>
+                    <span ng-show="job.status === 'RUNNING'">
+                        <span class="col-md-4 stats">{{ job.statistics.totalInserted | number }}</span>
+                        <span class="col-md-4 stats">{{ job.statistics.bytesPerSecond | number:1 }}</span>
+                        <span class="col-md-4 stats">
+                            {{ job.statistics.pctComplete | number:1 }} / {{ job.statistics.completionTime | number:1 }}
+                        </span>
+                    </span>
+                    <span ng-show="job.status !== 'RUNNING'">
+                        <span ng-hide="job.message" ng-class="getStatusClass(job)">{{ job.status }}</span>
+                        <span ng-show="job.message" class="error">{{ job.message }}</span>
+                    </span>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,26 @@
+.jobs_shown {
+    font-size: 12pt;
+    background-color: #0000ff;
+    color: #dddddd;
+    padding-left: 2px;
+}
+
+.status_active {
+    color: #0000ff;
+}
+
+.status_failed {
+    color: #ff0000;
+}
+
+.status_pending {
+    color: #ffaa00;
+}
+
+.status_queued {
+    color: #aaaaaa;
+}
+
+.status_success {
+    color: #00aa00;
+}
