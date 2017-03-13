@@ -4,7 +4,7 @@ import com.github.ldaniels528.broadway.models.{Job, JobStatistics, JobStatuses}
 import com.github.ldaniels528.broadway.rest.LoggerFactory
 import io.scalajs.JSON
 import io.scalajs.nodejs.fs.Fs
-import io.scalajs.nodejs.setInterval
+import io.scalajs.nodejs.{clearInterval, setInterval}
 import io.scalajs.util.DurationHelper._
 import io.scalajs.util.PromiseHelper.Implicits._
 
@@ -26,36 +26,56 @@ class JobProcessor(config: WorkerConfig, jobs: js.Dictionary[Job])(implicit ec: 
     */
   def execute(): Unit = {
     // if no process is active, start one ...
-    if (active == 0) {
+    if (active < config.getMaxConcurrency) {
       jobs.find(_._2.status == JobStatuses.QUEUED) foreach { case (_, job) =>
         job.status = JobStatuses.RUNNING
         active += 1
 
-        val options = ProcessingOptions(
-          filename = job.input,
-          collectionName = "listing_activity",
-          useThrottling = false
-        )
-
-        val task = for {
-          stats <- Fs.statAsync(options.filename)
-          statsGen = new StatisticsGenerator(stats.size)
-          _ = setInterval(() => update(job, statsGen), 5.seconds)
-          totalInserted <- LoadListingActivity.run(options, statsGen)
-        } yield totalInserted
-
-        task onComplete {
-          case Success(_) =>
+        launch(job) onComplete {
+          case Success(processed) =>
+            logger.info(s"Job ${job.id} (${job.name}) completed successfully ($processed records processed)")
             active -= 1
             job.status = JobStatuses.SUCCESS
-            job.statistics = null
+
           case Failure(e) =>
             active -= 1
-            logger.error(s"File '${job.input}' failed: ${e.getMessage}")
+            logger.error(s"Job ${job.id}: File '${job.input}' failed: ${e.getMessage}")
             job.status = JobStatuses.FAILED
             job.message = e.getMessage
         }
       }
+    }
+  }
+
+  private def launch(job: Job) = {
+    job.name match {
+      case "LoadListingActivity" =>
+        val options = ProcessingOptions(filename = job.input, collectionName = "listing_activity", useThrottling = false)
+        for {
+          stats <- Fs.statAsync(options.filename)
+          statsGen = new StatisticsGenerator(stats.size)
+          interval = setInterval(() => update(job, statsGen), 5.seconds)
+          totalInserted <- LoadListingActivity.run(options, statsGen)
+        } yield {
+          clearInterval(interval)
+          totalInserted
+        }
+
+      case name =>
+        val file = if(name.endsWith(".json")) name else name + ".json"
+        logger.info(s"file = $file, workfile = ${config.workflow(file).orNull}")
+        val path = config.workflow(file).getOrElse(throw js.JavaScriptException(s"No path found for $file"))
+        logger.info(s"Processing workflow '$path'...")
+        for {
+          stats <- Fs.statAsync(path)
+          statsGen = new StatisticsGenerator(stats.size)
+          workflow <- Workflow.load(path)
+          interval = setInterval(() => update(job, statsGen), 5.seconds)
+          totalInserted = 0L
+        } yield {
+          clearInterval(interval)
+          totalInserted
+        }
     }
   }
 

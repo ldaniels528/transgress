@@ -1,27 +1,44 @@
 package com.github.ldaniels528.broadway.worker
 
+import com.github.ldaniels528.broadway.rest.LoggerFactory
+import io.scalajs.JSON
+import io.scalajs.nodejs.fs.Fs
 import io.scalajs.nodejs.path.Path
 import io.scalajs.nodejs.process
 import io.scalajs.util.OptionHelper._
 
 import scala.scalajs.js
-import scala.scalajs.js.annotation.ScalaJSDefined
 
 /**
   * Worker Configuration
   * @author lawrence.daniels@gmail.com
   */
-@ScalaJSDefined
-class WorkerConfig(val baseDirectory: String) extends js.Object
+@js.native
+trait WorkerConfig extends js.Object {
+  val baseDirectory: js.UndefOr[String] = js.native
+  val maxConcurrency: js.UndefOr[Int] = js.native
+  val workFlows: js.UndefOr[js.Array[WorkflowConfig]] = js.native
+}
+
+@js.native
+trait WorkflowConfig extends js.Object {
+  val name: js.UndefOr[String] = js.native
+  val config: js.UndefOr[String] = js.native
+  val patterns: js.UndefOr[js.Array[String]] = js.native
+}
 
 /**
   * Worker Configuration Companion
   * @author lawrence.daniels@gmail.com
   */
 object WorkerConfig {
+  private val logger = LoggerFactory.getLogger(getClass)
 
-  def apply(baseDirectory: js.UndefOr[String] = js.undefined): WorkerConfig = {
-    new WorkerConfig(baseDirectory = baseDirectory.toOption ?? process.env.get("BROADWAY_HOME") getOrElse ".")
+  def load(path: js.UndefOr[String] = js.undefined): WorkerConfig = {
+    val configDirectory = path.toOption ?? process.env.get("BROADWAY_HOME") getOrElse "."
+    val configFile = s"$configDirectory/worker-config.json"
+    logger.info(s"Loading '$configFile'...")
+    JSON.parseAs[WorkerConfig](Fs.readFileSync(configFile).toString())
   }
 
   /**
@@ -34,13 +51,10 @@ object WorkerConfig {
     def archiveDirectory = s"${config.baseDirectory}/archive"
 
     @inline
-    def archiveFile(file: String): js.UndefOr[String] = {
-      val path = Path.parse(file)
-      for {
-        name <- path.name
-        ext <- path.ext
-      } yield s"$workDirectory/$name$ext"
-    }
+    def archiveFile(file: String): js.UndefOr[String] = getPath(file, archiveDirectory)
+
+    @inline
+    def getMaxConcurrency: Int = config.maxConcurrency getOrElse 1
 
     @inline
     def incomingDirectory = s"${config.baseDirectory}/incoming"
@@ -49,12 +63,20 @@ object WorkerConfig {
     def workDirectory = s"${config.baseDirectory}/work"
 
     @inline
-    def workFile(file: String): js.UndefOr[String] = {
+    def workFile(file: String): js.UndefOr[String] = getPath(file, workDirectory)
+
+    @inline
+    def workflowDirectory = s"${config.baseDirectory}/workflow"
+
+    @inline
+    def workflow(file: String): js.UndefOr[String] = getPath(file, workflowDirectory)
+
+    private def getPath(file: String, directory: String) = {
       val path = Path.parse(file)
       for {
         name <- path.name
-        ext <- path.ext
-      } yield s"$workDirectory/$name$ext"
+        ext = path.ext getOrElse ""
+      } yield s"$directory/$name$ext"
     }
 
   }

@@ -1,0 +1,13 @@
+{
+  "baseDirectory": "./example",
+  "maxConcurrency": 2,
+  "workFlows": [
+    {
+      "name": "userAgentFiles",
+      "config": "user-agent-workflow.json",
+      "patterns": [
+        "*.tsv"
+      ]
+    }
+  ]
+}

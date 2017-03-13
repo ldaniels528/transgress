@@ -1,0 +1,36 @@
+{
+  "input": "tsv-input",
+  "outputs": [
+    "csv-output",
+    "json-output"
+  ],
+  "onError": {
+    "source": "error-output"
+  },
+  "sources": [
+    {
+      "name": "tsv-input",
+      "type": "file",
+      "format": "tsv",
+      "columnHeaders": true
+    },
+    {
+      "name": "json-output",
+      "type": "file",
+      "path": "user-agent-data.json",
+      "format": "json"
+    },
+    {
+      "name": "csv-output",
+      "type": "file",
+      "path": "user-agent-data.csv",
+      "format": "csv"
+    },
+    {
+      "name": "error-output",
+      "type": "file",
+      "path": "errors.txt",
+      "format": "text"
+    }
+  ]
+}

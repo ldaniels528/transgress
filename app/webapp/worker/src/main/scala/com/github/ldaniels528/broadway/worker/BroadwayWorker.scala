@@ -52,7 +52,7 @@ object BroadwayWorker extends js.JSApp {
     */
   def start(startTime: Double)(implicit db: Db) {
     // load the worker config
-    implicit val config = loadWorkerConfig()
+    implicit val config = WorkerConfig.load()
 
     // setup the application
     val port = process.port getOrElse "1337"
@@ -71,10 +71,6 @@ object BroadwayWorker extends js.JSApp {
       logger.error("An uncaught exception was fired:")
       logger.error(err.stack)
     }
-  }
-
-  private def loadWorkerConfig()(implicit db: Db) = {
-    WorkerConfig(baseDirectory = "/Users/ldaniels/broadway")
   }
 
   private def configureApplication()(implicit db: Db): Application = {
@@ -107,28 +103,39 @@ object BroadwayWorker extends js.JSApp {
   }
 
   private def searchForNewFiles()(implicit db: Db, config: WorkerConfig): Unit = {
-    Glob.async(s"${config.incomingDirectory}/*").future onComplete {
-      case Success(files) =>
-        if (files.nonEmpty) {
-          for {
-            file <- files if !jobs.contains(file)
-            workFile <- config.workFile(file)
-          } queueForProcessing(file, workFile)
-        }
-      case Failure(e) =>
-        logger.error(s"Failed while searching for new files: ${e.getMessage}")
+    for {
+      workFlow <- config.workFlows getOrElse js.Array()
+      pattern <- workFlow.patterns getOrElse js.Array()
+    } {
+      Glob.async(s"${config.incomingDirectory}/$pattern").future onComplete {
+        case Success(files) =>
+          if (files.nonEmpty) {
+            for {
+              file <- files if !jobs.contains(file)
+            } queueForProcessing(file, workFlow)
+          }
+        case Failure(e) =>
+          logger.error(s"Failed while searching for new files: ${e.getMessage}")
+      }
     }
   }
 
-  private def queueForProcessing(file: String, workFile: String)(implicit db: Db, config: WorkerConfig) = {
-    logger.info(s"Moving '$file' to '$workFile'")
-    jobs(file) = new Job(name = "LoadListingActivity", input = workFile, status = JobStatuses.STAGED)
-    Fs.renameAsync(file, workFile).future onComplete {
-      case Success(_) =>
-        jobs(file).job.status = JobStatuses.QUEUED
-        logger.info(s"File '$workFile' is ready for processing...")
-      case Failure(e) =>
-        logger.error(s"Failed to move '$file' to '${config.workDirectory}'")
+  private def queueForProcessing(incomingFile: String, workFlow: WorkflowConfig)(implicit db: Db, config: WorkerConfig) = {
+    for {
+      name <- workFlow.name
+      workFlowRef <- workFlow.config
+      workFile <- config.workFile(incomingFile)
+    } {
+      logger.info(s"Moving '$incomingFile' to '$workFile'")
+      jobs(incomingFile) = new Job(name = name, input = workFile, workFlowRef = workFlowRef, status = JobStatuses.STAGED)
+      Fs.renameAsync(incomingFile, workFile).future onComplete {
+        case Success(_) =>
+          jobs(incomingFile).status = JobStatuses.QUEUED
+          logger.info(s"File '$workFile' is ready for processing...")
+        case Failure(e) =>
+          logger.error(s"Failed to move '$incomingFile' to '${config.workDirectory}': ${e.getMessage}")
+          // TODO retry up to N times?
+      }
     }
   }
 

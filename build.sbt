@@ -81,7 +81,7 @@ lazy val uiSettings = Seq(
     "org.scalatest" %%% "scalatest" % "3.0.0" % "test"
   ))
 
-lazy val webapp_common = (project in file("./app/webapp/common"))
+lazy val app_common = (project in file("./app/webapp/common"))
   .enablePlugins(ScalaJSPlugin)
   .settings(commonSettings: _*)
   .settings(
@@ -92,7 +92,7 @@ lazy val webapp_common = (project in file("./app/webapp/common"))
       "io.scalajs" %%% "core" % scalaJsIoVersion
     ))
 
-lazy val webapp_rest_common = (project in file("./app/webapp/rest/common"))
+lazy val app_rest_common = (project in file("./app/webapp/rest_common"))
   .enablePlugins(ScalaJSPlugin)
   .settings(commonSettings: _*)
   .settings(
@@ -104,9 +104,9 @@ lazy val webapp_rest_common = (project in file("./app/webapp/rest/common"))
       "io.scalajs" %%% "nodejs" % scalaJsIoVersion
     ))
 
-lazy val webapp_cli = (project in file("./app/webapp/cli"))
-  .aggregate(webapp_common, webapp_rest_common)
-  .dependsOn(webapp_common, webapp_rest_common)
+lazy val app_cli = (project in file("./app/webapp/cli"))
+  .aggregate(app_common, app_rest_common)
+  .dependsOn(app_common, app_rest_common)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(
@@ -119,9 +119,9 @@ lazy val webapp_cli = (project in file("./app/webapp/cli"))
       "io.scalajs.npm" %%% "request" % "2.79.0"
     ))
 
-lazy val webapp_client = (project in file("./app/webapp/client"))
-  .aggregate(webapp_common)
-  .dependsOn(webapp_common)
+lazy val app_client = (project in file("./app/webapp/client"))
+  .aggregate(app_common)
+  .dependsOn(app_common)
   .enablePlugins(ScalaJSPlugin)
   .settings(uiSettings: _*)
   .settings(
@@ -136,9 +136,9 @@ lazy val webapp_client = (project in file("./app/webapp/client"))
       "io.scalajs.npm" %%% "angular-toaster" % "2.1.0"
     ))
 
-lazy val webapp_server = (project in file("./app/webapp/server"))
-  .aggregate(webapp_common, webapp_client, webapp_rest_common)
-  .dependsOn(webapp_common, webapp_client, webapp_rest_common)
+lazy val app_server = (project in file("./app/webapp/server"))
+  .aggregate(app_common, app_client, app_rest_common)
+  .dependsOn(app_common, app_client, app_rest_common)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(
@@ -148,21 +148,19 @@ lazy val webapp_server = (project in file("./app/webapp/server"))
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "express-csv" % "0.6.0",
+      "io.scalajs.npm" %%% "body-parser" % "1.16.0",
+      "io.scalajs.npm" %%% "express" % "4.14.1",
       "io.scalajs.npm" %%% "express-fileupload" % "0.0.7",
       "io.scalajs.npm" %%% "express-ws" % "2.0.0",
-      "io.scalajs.npm" %%% "feedparser-promised" % "1.1.1",
-      "io.scalajs.npm" %%% "md5" % "1.0.2",
       "io.scalajs.npm" %%% "mongodb" % "2.2.22-4",
       "io.scalajs.npm" %%% "mongoose" % "4.8.1-2",
-      "io.scalajs.npm" %%% "mean-stack" % scalaJsIoVersion,
       "io.scalajs.npm" %%% "request" % "2.79.0",
       "io.scalajs.npm" %%% "splitargs" % "0.0.7"
     ))
 
-lazy val webapp_worker = (project in file("./app/webapp/worker"))
-  .aggregate(webapp_common, webapp_rest_common)
-  .dependsOn(webapp_common, webapp_rest_common)
+lazy val app_worker = (project in file("./app/webapp/worker"))
+  .aggregate(app_common, app_rest_common)
+  .dependsOn(app_common, app_rest_common)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(
@@ -172,24 +170,20 @@ lazy val webapp_worker = (project in file("./app/webapp/worker"))
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "body-parser" % "1.16.0",
       "io.scalajs.npm" %%% "csvtojson" % "1.1.4-2",
-      "io.scalajs.npm" %%% "express-csv" % "0.6.0",
-      "io.scalajs.npm" %%% "express-fileupload" % "0.0.7",
-      "io.scalajs.npm" %%% "feedparser-promised" % "1.1.1",
+      "io.scalajs.npm" %%% "express" % "4.14.1",
       "io.scalajs.npm" %%% "glob" % "7.1.1-2",
-      "io.scalajs.npm" %%% "md5" % "1.0.2",
       "io.scalajs.npm" %%% "moment" % "2.17.1-1",
       "io.scalajs.npm" %%% "moment-duration-format" % "1.3.0",
       "io.scalajs.npm" %%% "mongodb" % "2.2.22-4",
       "io.scalajs.npm" %%% "mongoose" % "4.8.1-2",
-      "io.scalajs.npm" %%% "mean-stack" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "splitargs" % "0.0.7",
       "io.scalajs.npm" %%% "throttle" % "1.0.3"
     ))
 
 lazy val broadway = (project in file("."))
-  .aggregate(webapp_cli, webapp_client, webapp_server, webapp_worker)
-  .dependsOn(webapp_cli, webapp_client, webapp_server, webapp_worker)
+  .aggregate(app_cli, app_client, app_server, app_worker)
+  .dependsOn(app_cli, app_client, app_server, app_worker)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(
@@ -199,10 +193,10 @@ lazy val broadway = (project in file("."))
     scalaVersion := appScalaVersion,
     relativeSourceMaps := true,
     compile in Compile <<=
-      (compile in Compile) dependsOn (fastOptJS in(webapp_client, Compile)),
+      (compile in Compile) dependsOn (fastOptJS in(app_client, Compile)),
     ivyScala := ivyScala.value map (_.copy(overrideScalaVersion = true)),
     Seq(packageScalaJSLauncher, fastOptJS, fullOptJS) map { packageJSKey =>
-      crossTarget in(webapp_client, Compile, packageJSKey) := baseDirectory.value / "public" / "javascripts"
+      crossTarget in(app_client, Compile, packageJSKey) := baseDirectory.value / "public" / "javascripts"
     })
 
 // add the alias
