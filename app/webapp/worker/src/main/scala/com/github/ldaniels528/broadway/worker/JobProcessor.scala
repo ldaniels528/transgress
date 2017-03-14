@@ -4,7 +4,7 @@ import com.github.ldaniels528.broadway.models.{Job, JobStatistics, JobStatuses}
 import com.github.ldaniels528.broadway.rest.LoggerFactory
 import io.scalajs.JSON
 import io.scalajs.nodejs.fs.Fs
-import io.scalajs.nodejs.{clearInterval, setInterval}
+import io.scalajs.nodejs.setInterval
 import io.scalajs.util.DurationHelper._
 import io.scalajs.util.PromiseHelper.Implicits._
 
@@ -48,7 +48,7 @@ class JobProcessor(config: WorkerConfig, jobs: js.Dictionary[Job])(implicit ec: 
   }
 
   private def launch(job: Job) = {
-    job.name match {
+    job.workFlowRef match {
       case "LoadListingActivity" =>
         val options = ProcessingOptions(filename = job.input, collectionName = "listing_activity", useThrottling = false)
         for {
@@ -57,23 +57,22 @@ class JobProcessor(config: WorkerConfig, jobs: js.Dictionary[Job])(implicit ec: 
           interval = setInterval(() => update(job, statsGen), 5.seconds)
           totalInserted <- LoadListingActivity.run(options, statsGen)
         } yield {
-          clearInterval(interval)
+          interval.clear()
           totalInserted
         }
 
-      case name =>
-        val file = if(name.endsWith(".json")) name else name + ".json"
-        logger.info(s"file = $file, workfile = ${config.workflow(file).orNull}")
-        val path = config.workflow(file).getOrElse(throw js.JavaScriptException(s"No path found for $file"))
+      case workflowPath =>
+        val path = config.workflow(workflowPath).getOrElse(throw js.JavaScriptException(s"No path found for $workflowPath"))
         logger.info(s"Processing workflow '$path'...")
         for {
           stats <- Fs.statAsync(path)
           statsGen = new StatisticsGenerator(stats.size)
           workflow <- Workflow.load(path)
+          _ = new WorkflowProcessor(workflow, job, statsGen).execute()
           interval = setInterval(() => update(job, statsGen), 5.seconds)
           totalInserted = 0L
         } yield {
-          clearInterval(interval)
+          interval.clear()
           totalInserted
         }
     }

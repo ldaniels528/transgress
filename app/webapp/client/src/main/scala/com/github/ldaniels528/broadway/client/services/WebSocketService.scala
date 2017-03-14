@@ -6,7 +6,7 @@ import io.scalajs.dom.ws._
 import io.scalajs.npm.angularjs._
 import io.scalajs.npm.angularjs.http.Http
 import io.scalajs.npm.angularjs.toaster.Toaster
-//import io.scalajs.util.DurationHelper._
+import io.scalajs.util.DurationHelper._
 
 import scala.concurrent.duration._
 import scala.scalajs.js
