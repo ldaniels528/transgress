@@ -152,7 +152,7 @@ class ListingActivityProcessor(db: Db, coll: Collection, options: ProcessingOpti
   private def createIndex() = {
     console.log("Creating Index...")
     val options = new IndexOptions(background = true, v = 1)
-    coll.ensureIndex("activities_idx", doc("OWNER_ID" -> 1, "CAR_ID" -> 1, "MODIFIED_DATE:" -> -1), options) onceCompleted {
+    coll.ensureIndex(doc("OWNER_ID" -> 1, "CAR_ID" -> 1, "MODIFIED_DATE:" -> -1), options) onceCompleted {
       case Success(_) => console.log(s"Index created.")
       case Failure(e) => console.error(s"Error creating index: ${e.getMessage}")
     }

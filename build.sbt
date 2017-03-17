@@ -6,7 +6,7 @@ import sbt._
 
 val appVersion = "0.0.1"
 val appScalaVersion = "2.12.1"
-val scalaJsIoVersion = "0.3.0.7"
+val scalaJsIoVersion = "0.3.0.8"
 
 scalacOptions ++= Seq("-deprecation", "-encoding", "UTF-8", "-feature", "-target:jvm-1.8", "-unchecked", "-Ywarn-adapted-args", "-Ywarn-value-discard", "-Xlint")
 
@@ -25,6 +25,11 @@ copyJS := {
   IO.copy(files1 ++ files2 ++ files3, overwrite = true)
 }
 
+lazy val testDependencies = Seq(
+  "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
+  "org.scalatest" %%% "scalatest" % "3.0.0" % "test"
+)
+
 lazy val appSettings = Seq(
   scalacOptions ++= Seq("-feature", "-deprecation"),
   scalacOptions in(Compile, doc) ++= Seq("-no-link-warnings"),
@@ -34,10 +39,7 @@ lazy val appSettings = Seq(
   relativeSourceMaps := true,
   homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
   resolvers += Resolver.sonatypeRepo("releases"),
-  libraryDependencies ++= Seq(
-    "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-    "org.scalatest" %%% "scalatest" % "3.0.0" % "test"
-  ))
+  libraryDependencies ++= testDependencies)
 
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq("-feature", "-deprecation"),
@@ -47,10 +49,7 @@ lazy val commonSettings = Seq(
   relativeSourceMaps := true,
   homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
   resolvers += Resolver.sonatypeRepo("releases"),
-  libraryDependencies ++= Seq(
-    "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-    "org.scalatest" %%% "scalatest" % "3.0.0" % "test"
-  ))
+  libraryDependencies ++= testDependencies)
 
 lazy val moduleSettings = Seq(
   scalacOptions ++= Seq("-feature", "-deprecation"),
@@ -61,10 +60,7 @@ lazy val moduleSettings = Seq(
   relativeSourceMaps := true,
   homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
   resolvers += Resolver.sonatypeRepo("releases"),
-  libraryDependencies ++= Seq(
-    "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-    "org.scalatest" %%% "scalatest" % "3.0.0" % "test"
-  ))
+  libraryDependencies ++= testDependencies)
 
 lazy val uiSettings = Seq(
   scalacOptions ++= Seq("-feature", "-deprecation"),
@@ -76,10 +72,7 @@ lazy val uiSettings = Seq(
   relativeSourceMaps := true,
   homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
   resolvers += Resolver.sonatypeRepo("releases"),
-  libraryDependencies ++= Seq(
-    "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-    "org.scalatest" %%% "scalatest" % "3.0.0" % "test"
-  ))
+  libraryDependencies ++= testDependencies)
 
 lazy val app_common = (project in file("./app/webapp/common"))
   .enablePlugins(ScalaJSPlugin)
@@ -116,7 +109,7 @@ lazy val app_cli = (project in file("./app/webapp/cli"))
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "request" % "2.79.0"
+      "io.scalajs.npm" %%% "request" % "2.79.0-3"
     ))
 
 lazy val app_client = (project in file("./app/webapp/client"))
@@ -131,9 +124,9 @@ lazy val app_client = (project in file("./app/webapp/client"))
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "dom-html" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "angular" % "1.6.3",
-      "io.scalajs.npm" %%% "angular-ui-router" % "0.4.2",
-      "io.scalajs.npm" %%% "angular-toaster" % "2.1.0"
+      "io.scalajs.npm" %%% "angular" % "1.6.3-1",
+      "io.scalajs.npm" %%% "angular-ui-router" % "0.4.2-1",
+      "io.scalajs.npm" %%% "angularjs-toaster" % "2.1.0-1"
     ))
 
 lazy val app_server = (project in file("./app/webapp/server"))
@@ -148,14 +141,13 @@ lazy val app_server = (project in file("./app/webapp/server"))
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "body-parser" % "1.16.0",
-      "io.scalajs.npm" %%% "express" % "4.14.1",
-      "io.scalajs.npm" %%% "express-fileupload" % "0.0.7",
-      "io.scalajs.npm" %%% "express-ws" % "2.0.0",
-      "io.scalajs.npm" %%% "mongodb" % "2.2.22-4",
-      "io.scalajs.npm" %%% "mongoose" % "4.8.1-2",
-      "io.scalajs.npm" %%% "request" % "2.79.0",
-      "io.scalajs.npm" %%% "splitargs" % "0.0.7"
+      "io.scalajs.npm" %%% "body-parser" % "1.16.0-3",
+      "io.scalajs.npm" %%% "express" % "4.14.1-3",
+      "io.scalajs.npm" %%% "express-fileupload" % "0.0.7-3",
+      "io.scalajs.npm" %%% "express-ws" % "2.0.0-3",
+      "io.scalajs.npm" %%% "mongodb" % "2.2.22-6",
+      "io.scalajs.npm" %%% "request" % "2.79.0-3",
+      "io.scalajs.npm" %%% "splitargs" % "0.0.7-3"
     ))
 
 lazy val app_worker = (project in file("./app/webapp/worker"))
@@ -170,15 +162,14 @@ lazy val app_worker = (project in file("./app/webapp/worker"))
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "body-parser" % "1.16.0",
-      "io.scalajs.npm" %%% "csvtojson" % "1.1.4-2",
-      "io.scalajs.npm" %%% "express" % "4.14.1",
-      "io.scalajs.npm" %%% "glob" % "7.1.1-2",
-      "io.scalajs.npm" %%% "moment" % "2.17.1-1",
+      "io.scalajs.npm" %%% "body-parser" % "1.16.0-3",
+      "io.scalajs.npm" %%% "csvtojson" % "1.1.4-3",
+      "io.scalajs.npm" %%% "express" % "4.14.1-3",
+      "io.scalajs.npm" %%% "glob" % "7.1.1-3",
+      "io.scalajs.npm" %%% "moment" % "2.17.1-3",
       "io.scalajs.npm" %%% "moment-duration-format" % "1.3.0",
-      "io.scalajs.npm" %%% "mongodb" % "2.2.22-4",
-      "io.scalajs.npm" %%% "mongoose" % "4.8.1-2",
-      "io.scalajs.npm" %%% "throttle" % "1.0.3"
+      "io.scalajs.npm" %%% "mongodb" % "2.2.22-6",
+      "io.scalajs.npm" %%% "throttle" % "1.0.3-1"
     ))
 
 lazy val broadway = (project in file("."))
