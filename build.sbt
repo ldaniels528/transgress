@@ -26,9 +26,10 @@ copyJS := {
 }
 
 lazy val testDependencies = Seq(
-  "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-  "org.scalatest" %%% "scalatest" % "3.0.0" % "test"
-)
+  libraryDependencies ++= Seq(
+    "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
+    "org.scalatest" %%% "scalatest" % "3.0.0" % "test"
+  ))
 
 lazy val appSettings = Seq(
   scalacOptions ++= Seq("-feature", "-deprecation"),
@@ -38,8 +39,7 @@ lazy val appSettings = Seq(
   autoCompilerPlugins := true,
   relativeSourceMaps := true,
   homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
-  resolvers += Resolver.sonatypeRepo("releases"),
-  libraryDependencies ++= testDependencies)
+  resolvers += Resolver.sonatypeRepo("releases"))
 
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq("-feature", "-deprecation"),
@@ -48,8 +48,7 @@ lazy val commonSettings = Seq(
   autoCompilerPlugins := true,
   relativeSourceMaps := true,
   homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
-  resolvers += Resolver.sonatypeRepo("releases"),
-  libraryDependencies ++= testDependencies)
+  resolvers += Resolver.sonatypeRepo("releases"))
 
 lazy val moduleSettings = Seq(
   scalacOptions ++= Seq("-feature", "-deprecation"),
@@ -59,8 +58,7 @@ lazy val moduleSettings = Seq(
   autoCompilerPlugins := true,
   relativeSourceMaps := true,
   homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
-  resolvers += Resolver.sonatypeRepo("releases"),
-  libraryDependencies ++= testDependencies)
+  resolvers += Resolver.sonatypeRepo("releases"))
 
 lazy val uiSettings = Seq(
   scalacOptions ++= Seq("-feature", "-deprecation"),
@@ -71,12 +69,12 @@ lazy val uiSettings = Seq(
   autoCompilerPlugins := true,
   relativeSourceMaps := true,
   homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
-  resolvers += Resolver.sonatypeRepo("releases"),
-  libraryDependencies ++= testDependencies)
+  resolvers += Resolver.sonatypeRepo("releases"))
 
 lazy val app_common = (project in file("./app/webapp/common"))
   .enablePlugins(ScalaJSPlugin)
   .settings(commonSettings: _*)
+  .settings(testDependencies: _*)
   .settings(
     name := "broadway-webapp-common",
     organization := "com.github.ldaniels528.broadway",
@@ -88,6 +86,7 @@ lazy val app_common = (project in file("./app/webapp/common"))
 lazy val app_rest_common = (project in file("./app/webapp/rest_common"))
   .enablePlugins(ScalaJSPlugin)
   .settings(commonSettings: _*)
+  .settings(testDependencies: _*)
   .settings(
     name := "broadway-rest-common",
     organization := "com.github.ldaniels528.broadway",
@@ -102,6 +101,7 @@ lazy val app_cli = (project in file("./app/webapp/cli"))
   .dependsOn(app_common, app_rest_common)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
+  .settings(testDependencies: _*)
   .settings(
     name := "broadway-cli",
     organization := "com.github.ldaniels528.broadway",
@@ -117,6 +117,7 @@ lazy val app_client = (project in file("./app/webapp/client"))
   .dependsOn(app_common)
   .enablePlugins(ScalaJSPlugin)
   .settings(uiSettings: _*)
+  .settings(testDependencies: _*)
   .settings(
     name := "broadway-web-client",
     organization := "com.github.ldaniels528.broadway",
@@ -134,6 +135,7 @@ lazy val app_server = (project in file("./app/webapp/server"))
   .dependsOn(app_common, app_client, app_rest_common)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
+  .settings(testDependencies: _*)
   .settings(
     name := "broadway-server",
     organization := "com.github.ldaniels528.broadway",
@@ -155,6 +157,7 @@ lazy val app_worker = (project in file("./app/webapp/worker"))
   .dependsOn(app_common, app_rest_common)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
+  .settings(testDependencies: _*)
   .settings(
     name := "broadway-worker",
     organization := "com.github.ldaniels528.broadway",
@@ -177,6 +180,7 @@ lazy val broadway = (project in file("."))
   .dependsOn(app_cli, app_client, app_server, app_worker)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
+  .settings(testDependencies: _*)
   .settings(
     name := "broadway.js",
     organization := "com.github.ldaniels528.broadway",

@@ -4,7 +4,7 @@ import com.github.ldaniels528.broadway.models.{Job, JobStatistics, JobStatuses}
 import com.github.ldaniels528.broadway.rest.LoggerFactory
 import io.scalajs.JSON
 import io.scalajs.nodejs.fs.Fs
-import io.scalajs.nodejs.setInterval
+import io.scalajs.nodejs.{clearInterval, setInterval}
 import io.scalajs.util.DurationHelper._
 import io.scalajs.util.PromiseHelper.Implicits._
 
@@ -57,22 +57,21 @@ class JobProcessor(config: WorkerConfig, jobs: js.Dictionary[Job])(implicit ec: 
           interval = setInterval(() => update(job, statsGen), 5.seconds)
           totalInserted <- LoadListingActivity.run(options, statsGen)
         } yield {
-          interval.clear()
+          clearInterval(interval)
           totalInserted
         }
 
-      case workflowPath =>
-        val path = config.workflow(workflowPath).getOrElse(throw js.JavaScriptException(s"No path found for $workflowPath"))
+      case workflowRef =>
+        val path = config.workflow(workflowRef).getOrElse(throw js.JavaScriptException(s"No path found for $workflowRef"))
         logger.info(s"Processing workflow '$path'...")
         for {
           stats <- Fs.statAsync(path)
           statsGen = new StatisticsGenerator(stats.size)
-          workflow <- Workflow.load(path)
-          _ = new WorkflowProcessor(workflow, job, statsGen).execute()
+          workflow <- WorkflowUnsafe.load(path)
           interval = setInterval(() => update(job, statsGen), 5.seconds)
-          totalInserted = 0L
+          totalInserted <- new WorkflowProcessor(config, job, workflow).execute()
         } yield {
-          interval.clear()
+          clearInterval(interval)
           totalInserted
         }
     }
