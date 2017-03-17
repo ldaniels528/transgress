@@ -1,48 +1,25 @@
 package com.github.ldaniels528.broadway.worker
 
-import com.github.ldaniels528.broadway.rest.LoggerFactory
-import io.scalajs.JSON
-import io.scalajs.nodejs.fs.Fs
-
-import scala.concurrent.{ExecutionContext, Future}
 import scala.scalajs.js
+import scala.scalajs.js.annotation.ScalaJSDefined
 
 /**
   * Represents a Workflow
   * @author lawrence.daniels@gmail.com
   */
-@js.native
-trait Workflow extends js.Object {
-  val input: js.UndefOr[String] = js.native
-  val output: js.UndefOr[js.Array[String]] = js.native
-  val onError: js.UndefOr[OnError] = js.native
-  val sources: js.UndefOr[js.Array[Source]] = js.native
-}
-
-@js.native
-trait Source extends js.Object {
-  val name: js.UndefOr[String] = js.native
-  val path: js.UndefOr[String] = js.native
-  val `type`: js.UndefOr[String] = js.native
-  val format: js.UndefOr[String] = js.native
-  val columnHeaders: js.UndefOr[Boolean] = js.native
-}
-
-@js.native
-trait OnError extends js.Object {
-  val source: js.UndefOr[String] = js.native
-}
+@ScalaJSDefined
+class Workflow(val input: String,
+               val outputs: js.Array[String],
+               val onError: Option[OnError],
+               val sources: js.Array[Source]) extends js.Object
 
 /**
-  * Workflow Companion
+  * Represents a Workflow Source
   * @author lawrence.daniels@gmail.com
   */
-object Workflow {
-  private val logger = LoggerFactory.getLogger(getClass)
-
-  def load(path: String)(implicit ec: ExecutionContext): Future[Workflow] = {
-    logger.info(s"Loading workflow '$path'...")
-    Fs.readFileAsync(path).future map (buf => JSON.parseAs[Workflow](buf.toString()))
-  }
-
-}
+@ScalaJSDefined
+class Source(val name: String,
+             val path: String,
+             val `type`: String,
+             val format: String,
+             val columnHeaders: Boolean) extends js.Object

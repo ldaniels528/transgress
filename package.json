@@ -14,6 +14,7 @@
     "express-fileupload": "0.0.5",
     "express-ws": "^3.0.0",
     "feedparser-promised": "^1.1.1",
+    "gzip-uncompressed-size": "^1.0.0",
     "html": "0.0.10",
     "htmlparser2": "^3.9.2",
     "http": "0.0.0",

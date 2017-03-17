@@ -48,7 +48,7 @@ class JobProcessor(config: WorkerConfig, jobs: js.Dictionary[Job])(implicit ec: 
   }
 
   private def launch(job: Job) = {
-    job.name match {
+    job.workFlowRef match {
       case "LoadListingActivity" =>
         val options = ProcessingOptions(filename = job.input, collectionName = "listing_activity", useThrottling = false)
         for {
@@ -61,17 +61,15 @@ class JobProcessor(config: WorkerConfig, jobs: js.Dictionary[Job])(implicit ec: 
           totalInserted
         }
 
-      case name =>
-        val file = if(name.endsWith(".json")) name else name + ".json"
-        logger.info(s"file = $file, workfile = ${config.workflow(file).orNull}")
-        val path = config.workflow(file).getOrElse(throw js.JavaScriptException(s"No path found for $file"))
+      case workflowRef =>
+        val path = config.workflow(workflowRef).getOrElse(throw js.JavaScriptException(s"No path found for $workflowRef"))
         logger.info(s"Processing workflow '$path'...")
         for {
           stats <- Fs.statAsync(path)
           statsGen = new StatisticsGenerator(stats.size)
-          workflow <- Workflow.load(path)
+          workflow <- WorkflowUnsafe.load(path)
           interval = setInterval(() => update(job, statsGen), 5.seconds)
-          totalInserted = 0L
+          totalInserted <- new WorkflowProcessor(config, job, workflow).execute()
         } yield {
           clearInterval(interval)
           totalInserted

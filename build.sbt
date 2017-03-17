@@ -174,6 +174,7 @@ lazy val app_worker = (project in file("./app/webapp/worker"))
       "io.scalajs.npm" %%% "csvtojson" % "1.1.4-2",
       "io.scalajs.npm" %%% "express" % "4.14.1",
       "io.scalajs.npm" %%% "glob" % "7.1.1-2",
+      "io.scalajs.npm" %%% "gzip-uncompressed-size" % "1.0.0",
       "io.scalajs.npm" %%% "moment" % "2.17.1-1",
       "io.scalajs.npm" %%% "moment-duration-format" % "1.3.0",
       "io.scalajs.npm" %%% "mongodb" % "2.2.22-4",
