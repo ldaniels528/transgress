@@ -14,7 +14,7 @@ class Job(val id: String = UUID.randomUUID().toString,
           val name: String,
           var input: String,
           var status: String,
-          var workFlowRef: String,
+          var workflowConfig: String,
           var message: js.UndefOr[String] = js.undefined,
           var statistics: js.UndefOr[JobStatistics] = js.undefined) extends js.Object
 

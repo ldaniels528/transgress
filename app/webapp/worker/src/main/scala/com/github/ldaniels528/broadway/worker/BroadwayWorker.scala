@@ -64,7 +64,7 @@ object BroadwayWorker extends js.JSApp {
 
     // start the job processor
     val jobProcessor = new JobProcessor(config, jobs)
-    setInterval(() => jobProcessor.execute(), 5.seconds)
+    setInterval(() => jobProcessor.run(), 5.seconds)
 
     // handle any uncaught exceptions
     process.onUncaughtException { err =>
@@ -120,14 +120,15 @@ object BroadwayWorker extends js.JSApp {
     }
   }
 
-  private def queueForProcessing(incomingFile: String, workFlow: WorkflowConfig)(implicit db: Db, config: WorkerConfig) = {
+  private def queueForProcessing(incomingFile: String, workflowConfig: WorkflowConfig)(implicit db: Db, config: WorkerConfig) = {
     for {
-      name <- workFlow.name
-      workFlowRef <- workFlow.config
+      name <- workflowConfig.name
       workFile <- config.workFile(incomingFile)
+      workflowConfigName <- workflowConfig.config
+      workflowConfigPath <- config.workflow(workflowConfigName)
     } {
-      logger.info(s"Moving '$incomingFile' to '$workFile'")
-      jobs(incomingFile) = new Job(name = name, input = workFile, workFlowRef = workFlowRef, status = JobStatuses.STAGED)
+      logger.info(s"$name: Moving '$incomingFile' to '$workFile'")
+      jobs(incomingFile) = new Job(name = name, input = workFile, workflowConfig = workflowConfigPath, status = JobStatuses.STAGED)
       Fs.renameAsync(incomingFile, workFile).future onComplete {
         case Success(_) =>
           jobs(incomingFile).status = JobStatuses.QUEUED

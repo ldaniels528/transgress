@@ -13,25 +13,23 @@ import scala.scalajs.js
   * @param sourceFileSize  the size of the source file in bytes
   * @param updateFrequency the update frequency for statistics generation
   */
-class StatisticsGenerator(val sourceFileSize: Double,
-                          val updateFrequency: FiniteDuration = 5.seconds) {
+class StatisticsGenerator(var sourceFileSize: Double = 0, val updateFrequency: FiniteDuration = 5.seconds) {
   private var processStartTime = js.Date.now()
-  var bytesRead = 0L
   private var bytesPerSecond = 0.0
   private var lastBytesRead = 0L
   private var lastRecordedCount = 0L
   private var lastUpdatedTime = js.Date.now()
   private var recordsPerSecond = 0.0
-  var totalInserted = 0L
 
+  var bytesRead = 0L
+  var failures = 0L
+  var totalRead = 0L
   var lastStats: Option[Statistics] = None
 
   /**
     * Sets the process start time (if delayed since creation of this instance)
     */
-  def start(): Unit = {
-    processStartTime = js.Date.now()
-  }
+  def start(): Unit = processStartTime = js.Date.now()
 
   /**
     * Returns updated statistics every x frequency or when forced is true
@@ -46,9 +44,9 @@ class StatisticsGenerator(val sourceFileSize: Double,
       lastUpdatedTime = js.Date.now()
 
       // records inserted
-      val recordsDelta = totalInserted - lastRecordedCount
+      val recordsDelta = totalRead - lastRecordedCount
       recordsPerSecond = recordsDelta / timeDeltaSeconds
-      lastRecordedCount = totalInserted
+      lastRecordedCount = totalRead
 
       // bytes read
       val bytesDelta = bytesRead - lastBytesRead
@@ -56,16 +54,17 @@ class StatisticsGenerator(val sourceFileSize: Double,
       lastBytesRead = bytesRead
 
       // estimated time of completion
-      val complete_% = (bytesRead / sourceFileSize) * 100.0
+      val complete_% = if (sourceFileSize == 0) 0 else (bytesRead / sourceFileSize) * 100.0
       val etc = {
         val avgBps = bytesRead / ((js.Date.now() - processStartTime) / 1000)
         (sourceFileSize - bytesRead) / avgBps
       }
 
       lastStats = Some(Statistics(
-        totalInserted = totalInserted,
+        totalInserted = totalRead,
         bytesRead = bytesRead,
         bytesPerSecond = bytesPerSecond,
+        failures = failures,
         recordsDelta = recordsDelta,
         recordsPerSecond = recordsPerSecond,
         complete_%,
@@ -111,6 +110,7 @@ object StatisticsGenerator {
   * @param totalInserted    the total number of records inserted
   * @param bytesRead        the current number of bytes retrieved
   * @param bytesPerSecond   the snapshot's bytes/second transfer rate
+  * @param failures         the number of total failures
   * @param recordsDelta     the number of records inserted during this snapshot
   * @param recordsPerSecond the snapshot's records/second transfer rate
   * @param complete_%       the percentage of completion
@@ -119,6 +119,7 @@ object StatisticsGenerator {
 case class Statistics(totalInserted: Long,
                       bytesRead: Long,
                       bytesPerSecond: Double,
+                      failures: Long,
                       recordsDelta: Long,
                       recordsPerSecond: Double,
                       complete_% : Double,
@@ -129,7 +130,7 @@ case class Statistics(totalInserted: Long,
     val etc = Moment.duration(completionTime, "seconds").format("h [hrs], m [min]")
 
     // return the statistics
-    f"$totalInserted total (${complete_%}%.1f%% - $etc), $recordsDelta batch " +
+    f"$totalInserted total (${complete_%}%.1f%% - $etc), failures $failures, $recordsDelta batch " +
       f"($recordsPerSecond%.1f records/sec, ${bytesPerSecond.bps})"
   }
 }

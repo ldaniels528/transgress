@@ -1,12 +1,18 @@
 {
   "baseDirectory": "./example",
-  "maxConcurrency": 2,
+  "maxConcurrency": 1,
   "workFlows": [
     {
-      "name": "userAgentFiles",
+      "name": "UserAgents",
       "config": "user-agent-workflow.json",
       "patterns": [
-        "*.tsv"
+        "useragents*.tsv"
+      ]
+    }, {
+      "name": "ListingActivity",
+      "config": "listing-activity-workflow.json",
+      "patterns": [
+        "LISTING_ACTIVITY*.txt", "LISTING_ACTIVITY*.txt.gz"
       ]
     }
   ]

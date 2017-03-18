@@ -4,13 +4,11 @@
     "csv-output",
     "json-output"
   ],
-  "onError": {
-    "source": "error-output"
-  },
   "sources": [
     {
       "name": "tsv-input",
       "type": "file",
+      "path": "unknown",
       "format": "tsv",
       "columnHeaders": true
     },
@@ -24,13 +22,8 @@
       "name": "csv-output",
       "type": "file",
       "path": "user-agent-data.csv",
-      "format": "csv"
-    },
-    {
-      "name": "error-output",
-      "type": "file",
-      "path": "errors.txt",
-      "format": "text"
+      "format": "csv",
+      "columnHeaders": true
     }
   ]
 }

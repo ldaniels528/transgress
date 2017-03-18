@@ -71,7 +71,7 @@ lazy val uiSettings = Seq(
   homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
   resolvers += Resolver.sonatypeRepo("releases"))
 
-lazy val app_common = (project in file("./app/webapp/common"))
+lazy val common = (project in file("./app/webapp/common"))
   .enablePlugins(ScalaJSPlugin)
   .settings(commonSettings: _*)
   .settings(testDependencies: _*)
@@ -83,7 +83,7 @@ lazy val app_common = (project in file("./app/webapp/common"))
       "io.scalajs" %%% "core" % scalaJsIoVersion
     ))
 
-lazy val app_rest_common = (project in file("./app/webapp/rest_common"))
+lazy val rest_common = (project in file("./app/webapp/rest_common"))
   .enablePlugins(ScalaJSPlugin)
   .settings(commonSettings: _*)
   .settings(testDependencies: _*)
@@ -96,9 +96,9 @@ lazy val app_rest_common = (project in file("./app/webapp/rest_common"))
       "io.scalajs" %%% "nodejs" % scalaJsIoVersion
     ))
 
-lazy val app_cli = (project in file("./app/webapp/cli"))
-  .aggregate(app_common, app_rest_common)
-  .dependsOn(app_common, app_rest_common)
+lazy val cli = (project in file("./app/webapp/cli"))
+  .aggregate(common, rest_common)
+  .dependsOn(common, rest_common)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
@@ -112,9 +112,9 @@ lazy val app_cli = (project in file("./app/webapp/cli"))
       "io.scalajs.npm" %%% "request" % "2.79.0-3"
     ))
 
-lazy val app_client = (project in file("./app/webapp/client"))
-  .aggregate(app_common)
-  .dependsOn(app_common)
+lazy val client = (project in file("./app/webapp/client"))
+  .aggregate(common)
+  .dependsOn(common)
   .enablePlugins(ScalaJSPlugin)
   .settings(uiSettings: _*)
   .settings(testDependencies: _*)
@@ -130,9 +130,9 @@ lazy val app_client = (project in file("./app/webapp/client"))
       "io.scalajs.npm" %%% "angularjs-toaster" % "2.1.0-1"
     ))
 
-lazy val app_server = (project in file("./app/webapp/server"))
-  .aggregate(app_common, app_client, app_rest_common)
-  .dependsOn(app_common, app_client, app_rest_common)
+lazy val server = (project in file("./app/webapp/server"))
+  .aggregate(common, client, rest_common)
+  .dependsOn(common, client, rest_common)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
@@ -152,9 +152,9 @@ lazy val app_server = (project in file("./app/webapp/server"))
       "io.scalajs.npm" %%% "splitargs" % "0.0.7-3"
     ))
 
-lazy val app_worker = (project in file("./app/webapp/worker"))
-  .aggregate(app_common, app_rest_common)
-  .dependsOn(app_common, app_rest_common)
+lazy val worker = (project in file("./app/webapp/worker"))
+  .aggregate(common, rest_common)
+  .dependsOn(common, rest_common)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
@@ -169,6 +169,7 @@ lazy val app_worker = (project in file("./app/webapp/worker"))
       "io.scalajs.npm" %%% "csvtojson" % "1.1.4-3",
       "io.scalajs.npm" %%% "express" % "4.14.1-3",
       "io.scalajs.npm" %%% "glob" % "7.1.1-3",
+      "io.scalajs.npm" %%% "gzip-uncompressed-size" % "1.0.0",
       "io.scalajs.npm" %%% "moment" % "2.17.1-3",
       "io.scalajs.npm" %%% "moment-duration-format" % "1.3.0",
       "io.scalajs.npm" %%% "mongodb" % "2.2.22-6",
@@ -176,8 +177,8 @@ lazy val app_worker = (project in file("./app/webapp/worker"))
     ))
 
 lazy val broadway = (project in file("."))
-  .aggregate(app_cli, app_client, app_server, app_worker)
-  .dependsOn(app_cli, app_client, app_server, app_worker)
+  .aggregate(cli, client, server, worker)
+  .dependsOn(cli, client, server, worker)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
@@ -188,10 +189,10 @@ lazy val broadway = (project in file("."))
     scalaVersion := appScalaVersion,
     relativeSourceMaps := true,
     compile in Compile <<=
-      (compile in Compile) dependsOn (fastOptJS in(app_client, Compile)),
+      (compile in Compile) dependsOn (fastOptJS in(client, Compile)),
     ivyScala := ivyScala.value map (_.copy(overrideScalaVersion = true)),
     Seq(packageScalaJSLauncher, fastOptJS, fullOptJS) map { packageJSKey =>
-      crossTarget in(app_client, Compile, packageJSKey) := baseDirectory.value / "public" / "javascripts"
+      crossTarget in(client, Compile, packageJSKey) := baseDirectory.value / "public" / "javascripts"
     })
 
 // add the alias

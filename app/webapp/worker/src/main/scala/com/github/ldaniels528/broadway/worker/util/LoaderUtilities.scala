@@ -1,4 +1,4 @@
-package com.github.ldaniels528.broadway.worker
+package com.github.ldaniels528.broadway.worker.util
 
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future, Promise}
