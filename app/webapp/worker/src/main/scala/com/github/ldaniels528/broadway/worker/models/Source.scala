@@ -4,12 +4,11 @@ import io.scalajs.nodejs.fs.{Fs, ReadStream}
 import io.scalajs.nodejs.zlib.Zlib
 import io.scalajs.npm.gzipuncompressedsize.{GzipUncompressedSize => GUS}
 import io.scalajs.util.JsUnderOrHelper._
-import io.scalajs.util.OptionHelper._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.scalajs.js
 import scala.scalajs.js.annotation.ScalaJSDefined
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
   * Represents a Workflow Source
@@ -21,6 +20,7 @@ class Source(val name: String,
              val `type`: String,
              val format: String,
              val columnHeaders: Boolean,
+             val fields: js.Array[Field],
              val mongoConnect: Option[String],
              val mongoCollection: Option[String]) extends js.Object
 
@@ -41,6 +41,7 @@ object Source {
     val `type`: js.UndefOr[String] = js.native
     val format: js.UndefOr[String] = js.native
     val columnHeaders: js.UndefOr[Boolean] = js.native
+    val fields: js.UndefOr[js.Array[Field.Unsafe]] = js.native
     val mongoConnect: js.UndefOr[String] = js.native
     val mongoCollection: js.UndefOr[String] = js.native
   }
@@ -79,14 +80,18 @@ object Source {
     @inline
     def validate: Try[Source] = {
       Try {
-        val name = source.name.toOption.orDie("No name specified")
-        val path = source.path.toOption.orDie(s"$name: No path specified")
-        val `type` = source.`type`.toOption.orDie(s"$name: No type specified")
-        val format = source.format.toOption.orDie(s"$name.${`type`}: No format specified")
+        val name = source.name.orDie("No name specified")
+        val path = source.path.orDie(s"$name: No path specified")
+        val `type` = source.`type`.orDie(s"$name: No type specified")
+        val format = source.format.orDie(s"$name.${`type`}: No format specified")
         val columnHeaders = source.columnHeaders.isTrue
+        val fields = source.fields.map(_.map(_.validate match {
+          case Success(v) => v
+          case Failure(e) => throw js.JavaScriptException(e.getMessage)
+        })).getOrElse(js.Array())
         val mongoConnect = source.mongoConnect.toOption
         val mongoCollection = source.mongoCollection.toOption
-        new Source(name, path, `type`, format, columnHeaders, mongoConnect, mongoCollection)
+        new Source(name, path, `type`, format, columnHeaders, fields, mongoConnect, mongoCollection)
       }
     }
   }

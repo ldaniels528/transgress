@@ -1,0 +1,32 @@
+{
+  "input": {
+    "name": "csv-input",
+    "type": "file",
+    "path": "unknown",
+    "format": "csv",
+    "columnHeaders": true
+  },
+  "outputs": [
+    {
+      "name": "fixed-output",
+      "type": "file",
+      "path": "./example/incoming/useragents-{{$date:YYYYMMDD}}.txt",
+      "format": "fixed",
+      "fields": [
+        {
+          "name": "USER_AGENT_FRAGMENT",
+          "length": 80
+        },
+        {
+          "name": "USER_AGENT_SOURCE",
+          "length": 12
+        },
+        {
+          "name": "EFFECTIVE_DATETIME",
+          "length": 12
+        }
+      ]
+    }
+  ],
+  "variables": []
+}

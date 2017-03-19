@@ -5,6 +5,7 @@ import io.scalajs.JSON
 import io.scalajs.nodejs.fs.Fs
 import io.scalajs.nodejs.path.Path
 import io.scalajs.nodejs.process
+import io.scalajs.npm.moment.Moment
 import io.scalajs.util.OptionHelper._
 
 import scala.scalajs.js
@@ -17,14 +18,7 @@ import scala.scalajs.js
 trait WorkerConfig extends js.Object {
   val baseDirectory: js.UndefOr[String] = js.native
   val maxConcurrency: js.UndefOr[Int] = js.native
-  val workFlows: js.UndefOr[js.Array[WorkflowConfig]] = js.native
-}
-
-@js.native
-trait WorkflowConfig extends js.Object {
-  val name: js.UndefOr[String] = js.native
-  val config: js.UndefOr[String] = js.native
-  val patterns: js.UndefOr[js.Array[String]] = js.native
+  val workflows: js.UndefOr[js.Array[WorkflowConfig]] = js.native
 }
 
 /**
@@ -51,7 +45,7 @@ object WorkerConfig {
     def archiveDirectory = s"${config.baseDirectory}/archive"
 
     @inline
-    def archiveFile(file: String): js.UndefOr[String] = getPath(file, archiveDirectory)
+    def archiveFile(file: String): js.UndefOr[String] = getArchivePath(file, archiveDirectory)
 
     @inline
     def getMaxConcurrency: Int = config.maxConcurrency getOrElse 1
@@ -66,10 +60,20 @@ object WorkerConfig {
     def workFile(file: String): js.UndefOr[String] = getPath(file, workDirectory)
 
     @inline
-    def workflowDirectory = s"${config.baseDirectory}/workflow"
+    def workflowDirectory = s"${config.baseDirectory}/workflows"
 
     @inline
     def workflow(file: String): js.UndefOr[String] = getPath(file, workflowDirectory)
+
+    private def getArchivePath(file: String, directory: String) = {
+      val path = Path.parse(file)
+      val yyyymmdd = Moment().format("YYYYMMDD")
+      val hhmmss = Moment().format("HHmmss")
+      for {
+        name <- path.name
+        ext = path.ext getOrElse ""
+      } yield s"$directory/$yyyymmdd/$hhmmss/$name$ext"
+    }
 
     private def getPath(file: String, directory: String) = {
       val path = Path.parse(file)

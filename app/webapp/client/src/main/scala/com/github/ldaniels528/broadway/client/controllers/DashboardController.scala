@@ -1,7 +1,9 @@
 package com.github.ldaniels528.broadway.client.controllers
 
+import com.github.ldaniels528.broadway.models.JobStates._
 import com.github.ldaniels528.broadway.client.services.DashboardService
 import com.github.ldaniels528.broadway.models.Job
+import com.github.ldaniels528.broadway.models.JobStates.STOPPED
 import io.scalajs.dom.html.browser._
 import io.scalajs.npm.angularjs.AngularJsHelper._
 import io.scalajs.npm.angularjs.toaster.Toaster
@@ -46,12 +48,12 @@ class DashboardController($scope: DashboardScope, $interval: Interval, toaster: 
     * Returns a colored bulb based on the status of the given job
     */
   $scope.getStatusBulb = (aJob: js.UndefOr[Job]) => aJob flatMap { job =>
-    job.status match {
-      case "FAILED" => "images/statuses/redlight.png"
-      case "PENDING" => "images/statuses/yellowlight.gif"
-      case "QUEUED" => "images/statuses/offlight.png"
-      case "RUNNING" => "images/statuses/loading16.gif"
-      case "SUCCESS" => "images/statuses/greenlight.png"
+    job.state match {
+      case NEW => "images/statuses/offlight.png"
+      case QUEUED => "images/statuses/yellowlight.gif"
+      case RUNNING => "images/statuses/loading16.gif"
+      case STOPPED => "images/statuses/redlight.png"
+      case SUCCESS => "images/statuses/greenlight.png"
       case _ => js.undefined
     }
   }
@@ -60,12 +62,12 @@ class DashboardController($scope: DashboardScope, $interval: Interval, toaster: 
     * Returns a class representing the status of the given job
     */
   $scope.getStatusClass = (aJob: js.UndefOr[Job]) => aJob flatMap { job =>
-    job.status match {
-      case "FAILED" => "status_failed"
-      case "PENDING" => "status_pending"
-      case "QUEUED" => "status_queued"
-      case "RUNNING" => "status_active"
-      case "SUCCESS" => "status_success"
+    job.state match {
+      case NEW => "status_pending"
+      case QUEUED => "status_queued"
+      case RUNNING => "status_active"
+      case STOPPED => "status_failed"
+      case SUCCESS => "status_success"
       case _ => js.undefined
     }
   }

@@ -1,6 +1,5 @@
 package com.github.ldaniels528.broadway.worker
 
-import com.github.ldaniels528.broadway.models.{Job, JobStatuses}
 import com.github.ldaniels528.broadway.rest.LoggerFactory
 import com.github.ldaniels528.broadway.rest.ProcessHelper._
 import com.github.ldaniels528.broadway.rest.StringHelper._
@@ -9,10 +8,10 @@ import io.scalajs.nodejs.fs.Fs
 import io.scalajs.nodejs.{process, setInterval}
 import io.scalajs.npm.bodyparser.{BodyParser, UrlEncodedBodyOptions}
 import io.scalajs.npm.express._
-import io.scalajs.npm.glob._
 import io.scalajs.npm.mongodb.{Db, MongoClient}
 import io.scalajs.util.DurationHelper._
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.scalajs.js
@@ -25,7 +24,6 @@ import scala.util.{Failure, Success}
   */
 object BroadwayWorker extends js.JSApp {
   private val logger = LoggerFactory.getLogger(getClass)
-  private val jobs = js.Dictionary[Job]()
 
   @JSExport
   override def main(): Unit = {
@@ -54,26 +52,54 @@ object BroadwayWorker extends js.JSApp {
     // load the worker config
     implicit val config = WorkerConfig.load()
 
-    // setup the application
-    val port = process.port getOrElse "1337"
-    val app = configureApplication()
-    app.listen(port, () => logger.info("Server now listening on port %s [%d msec]", port, js.Date.now() - startTime))
+    ensureLocalDirectories() onComplete {
+      case Success(results) =>
+        // were directories created?
+        results foreach { case (directory, exists) =>
+          if (!exists) logger.info(s"Created directory '$directory'...")
+        }
 
-    // setup the file watchers
-    setInterval(() => searchForNewFiles(), 5.seconds)
+        // start the job processor
+        val jobProcessor = new JobProcessor()
+        setInterval(() => jobProcessor.run(), 5.seconds)
 
-    // start the job processor
-    val jobProcessor = new JobProcessor(config, jobs)
-    setInterval(() => jobProcessor.run(), 5.seconds)
+        // setup the application
+        val port = process.port getOrElse "1337"
+        val app = configureApplication(jobProcessor)
+        app.listen(port, () => logger.info("Server now listening on port %s [%d msec]", port, js.Date.now() - startTime))
 
-    // handle any uncaught exceptions
-    process.onUncaughtException { err =>
-      logger.error("An uncaught exception was fired:")
-      logger.error(err.stack)
+        // handle any uncaught exceptions
+        process.onUncaughtException { err =>
+          logger.error("An uncaught exception was fired:")
+          logger.error(err.stack)
+        }
+      case Failure(e) =>
+        logger.error(s"Failed to initialize processing directories; ${e.getMessage}")
     }
   }
 
-  private def configureApplication()(implicit db: Db): Application = {
+  private def ensureLocalDirectories()(implicit config: WorkerConfig) = {
+    config.baseDirectory.toOption match {
+      case Some(baseDirectory) =>
+        logger.info(s"Ensuring the existence of processing sub-directories under '$baseDirectory'...")
+        val directories = Seq(config.incomingDirectory, config.workDirectory, config.archiveDirectory, config.workflowDirectory)
+        for {
+          result <- ensureLocalDirectory(baseDirectory)
+          results <- Future.sequence(directories map ensureLocalDirectory)
+        } yield result :: results.toList
+      case None =>
+        Future.successful(Nil)
+    }
+  }
+
+  private def ensureLocalDirectory(directory: String) = {
+    for {
+      exists <- Fs.existsAsync(directory).future
+      _ <- if (!exists) Fs.mkdirAsync(directory).future else Future.successful({})
+    } yield (directory, exists)
+  }
+
+  private def configureApplication(jobProcessor: JobProcessor)(implicit db: Db): Application = {
     logger.info("Loading Express modules...")
     implicit val app = Express()
 
@@ -98,46 +124,8 @@ object BroadwayWorker extends js.JSApp {
 
     // setup all other routes
     logger.info("Setting up all other routes...")
-    new JobRoutes(app, jobs, db)
+    new JobRoutes(app, jobProcessor, db)
     app
-  }
-
-  private def searchForNewFiles()(implicit db: Db, config: WorkerConfig): Unit = {
-    for {
-      workFlow <- config.workFlows getOrElse js.Array()
-      pattern <- workFlow.patterns getOrElse js.Array()
-    } {
-      Glob.async(s"${config.incomingDirectory}/$pattern").future onComplete {
-        case Success(files) =>
-          if (files.nonEmpty) {
-            for {
-              file <- files if !jobs.contains(file)
-            } queueForProcessing(file, workFlow)
-          }
-        case Failure(e) =>
-          logger.error(s"Failed while searching for new files: ${e.getMessage}")
-      }
-    }
-  }
-
-  private def queueForProcessing(incomingFile: String, workflowConfig: WorkflowConfig)(implicit db: Db, config: WorkerConfig) = {
-    for {
-      name <- workflowConfig.name
-      workFile <- config.workFile(incomingFile)
-      workflowConfigName <- workflowConfig.config
-      workflowConfigPath <- config.workflow(workflowConfigName)
-    } {
-      logger.info(s"$name: Moving '$incomingFile' to '$workFile'")
-      jobs(incomingFile) = new Job(name = name, input = workFile, workflowConfig = workflowConfigPath, status = JobStatuses.STAGED)
-      Fs.renameAsync(incomingFile, workFile).future onComplete {
-        case Success(_) =>
-          jobs(incomingFile).status = JobStatuses.QUEUED
-          logger.info(s"File '$workFile' is ready for processing...")
-        case Failure(e) =>
-          logger.error(s"Failed to move '$incomingFile' to '${config.workDirectory}': ${e.getMessage}")
-          // TODO retry up to N times?
-      }
-    }
   }
 
 }

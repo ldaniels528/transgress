@@ -4,14 +4,19 @@ import com.github.ldaniels528.broadway.rest.LoggerFactory
 import com.github.ldaniels528.broadway.worker.models.Source
 import com.github.ldaniels528.broadway.worker.util.LoaderUtilities._
 import com.github.ldaniels528.broadway.worker.{Statistics, StatisticsGenerator}
+import io.scalajs.JSON
 import io.scalajs.nodejs.Error
 import io.scalajs.nodejs.buffer.Buffer
 import io.scalajs.nodejs.fs.ReadStream
+import io.scalajs.nodejs.os.OS
+import io.scalajs.nodejs.readline.{Readline, ReadlineOptions}
 import io.scalajs.npm.csvtojson
 import io.scalajs.npm.csvtojson.ConverterOptions
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.language.{existentials, reflectiveCalls}
 import scala.scalajs.js
+import scala.util.{Failure, Success, Try}
 
 /**
   * Text File Input Device
@@ -32,16 +37,22 @@ class TextFileInputDevice(val source: Source, stream: ReadStream)(implicit ec: E
 
     // setup the statistics generator - asynchronously set the file size
     source.getFileSize foreach { size =>
-      logger.info(s"${source.path} is ${size.bytes}")
+      logger.info(s"${source.name}: ${source.path} is ${size.bytes}")
       statsGen.sourceFileSize = size
     }
 
     // update the bytes read on each data event
-    stream.onData[Buffer](statsGen.bytesRead += _.length)
+    stream.onData[Any] {
+      case v: Buffer => statsGen.bytesRead += v.length
+      case v: String => statsGen.bytesRead += v.length
+      case _ =>
+    }
 
     // handle the input based on its format
     source.format match {
       case "csv" => setupDelimitedTextProcessing(",", promise, onData, onError, onFinish)
+      case "fixed" => setupLineProcessing(fromFixed, promise, onData, onError, onFinish)
+      case "json" => setupLineProcessing(fromJSON, promise, onData, onError, onFinish)
       case "psv" => setupDelimitedTextProcessing("|", promise, onData, onError, onFinish)
       case "tsv" => setupDelimitedTextProcessing("\t", promise, onData, onError, onFinish)
       case format =>
@@ -65,11 +76,8 @@ class TextFileInputDevice(val source: Source, stream: ReadStream)(implicit ec: E
     val converter = new csvtojson.Converter(new ConverterOptions(
       constructResult = false,
       delimiter = delimiter
-    )).on("error", (err: Error) => onError(err))
-      .on("record_parsed", (data: js.Any) => {
-        statsGen.totalRead += 1
-        onData(data)
-      })
+    )).onError(error => onError(error))
+      .on("record_parsed", (data: js.Any) => onData(data))
       .on("end_parsed", (data: js.Any) => {
         onFinish(data)
         statsGen.update(force = true) foreach (stats => promise.success(stats))
@@ -78,5 +86,40 @@ class TextFileInputDevice(val source: Source, stream: ReadStream)(implicit ec: E
     stream.pipe(converter)
     ()
   }
+
+  /**
+    * Setups event-driven text line processing
+    * @param promise  the completion [[Promise promise]]
+    * @param onData   the data event handler
+    * @param onFinish the completion event handler
+    */
+  private def setupLineProcessing(converter: String => js.Any,
+                                  promise: Promise[Statistics],
+                                  onData: js.Any => Any,
+                                  onError: Error => Any,
+                                  onFinish: js.Any => Any)(implicit statsGen: StatisticsGenerator) = {
+    Readline.createInterface(new ReadlineOptions(input = stream))
+      .on("error", (error: Error) => onError(error))
+      .on("line", (line: String) => {
+        Try(converter(line)) match {
+          case Success(jsObject) => onData(jsObject)
+          case Failure(e) => onError(new Error(e.getMessage))
+        }
+      })
+      .on("close", () => {
+        onFinish(OS.EOL)
+        statsGen.update(force = true) foreach (stats => promise.success(stats))
+      })
+  }
+
+  private def fromFixed(line: String) = {
+    val result = source.fields.foldLeft((0, js.Dictionary[String]())) { case ((pos, dict), field) =>
+      dict(field.name) = line.substring(pos, pos + field.length)
+      (pos + field.length, dict)
+    }
+    result._2
+  }
+
+  private def fromJSON(line: String) = JSON.parse(line)
 
 }

@@ -1,6 +1,7 @@
 package com.github.ldaniels528.broadway.worker.devices
 
 import com.github.ldaniels528.broadway.rest.LoggerFactory
+import com.github.ldaniels528.broadway.worker.ExpressionEvaluator
 import com.github.ldaniels528.broadway.worker.models.Source
 import io.scalajs.nodejs.fs.Fs
 
@@ -28,6 +29,7 @@ object DeviceFactory {
         val stream = Fs.createWriteStream(source.path)
         source.format match {
           case "csv" => Some(new DelimitedOutputDevice(stream, delimiter = ","))
+          case "fixed" => Some(new FixedOutputDevice(source, stream))
           case "json" => Some(new JSONOutputDevice(stream))
           case "psv" => Some(new DelimitedOutputDevice(stream, delimiter = "|"))
           case "tsv" => Some(new DelimitedOutputDevice(stream, delimiter = "\t"))

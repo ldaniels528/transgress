@@ -1,11 +1,7 @@
 package com.github.ldaniels528.broadway.worker.models
 
-import com.github.ldaniels528.broadway.rest.LoggerFactory
-import io.scalajs.JSON
-import io.scalajs.nodejs.fs.Fs
-import io.scalajs.util.OptionHelper._
+import io.scalajs.util.JsUnderOrHelper._
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.scalajs.js
 import scala.scalajs.js.annotation.ScalaJSDefined
 import scala.util.{Failure, Success, Try}
@@ -15,22 +11,16 @@ import scala.util.{Failure, Success, Try}
   * @author lawrence.daniels@gmail.com
   */
 @ScalaJSDefined
-class Workflow(val input: String,
-               val outputs: js.Array[String],
+class Workflow(val input: Source,
+               val outputs: js.Array[Source],
                val onError: Option[OnError],
-               val sources: js.Array[Source]) extends js.Object
+               val variables: js.Array[Variable]) extends js.Object
 
 /**
   * Workflow Companion
   * @author lawrence.daniels@gmail.com
   */
 object Workflow {
-  private val logger = LoggerFactory.getLogger(getClass)
-
-  def load(path: String)(implicit ec: ExecutionContext): Future[Workflow.Unsafe] = {
-    logger.info(s"Loading workflow '$path'...")
-    Fs.readFileAsync(path).future map (buf => JSON.parseAs[Workflow.Unsafe](buf.toString()))
-  }
 
   /**
     * Represents a Workflow (unsafe)
@@ -38,10 +28,10 @@ object Workflow {
     */
   @js.native
   trait Unsafe extends js.Object {
-    val input: js.UndefOr[String] = js.native
-    val outputs: js.UndefOr[js.Array[String]] = js.native
+    val input: js.UndefOr[Source.Unsafe] = js.native
+    val outputs: js.UndefOr[js.Array[Source.Unsafe]] = js.native
     val onError: js.UndefOr[OnError] = js.native
-    val sources: js.UndefOr[js.Array[Source.Unsafe]] = js.native
+    val variables: js.UndefOr[js.Array[Variable.Unsafe]] = js.native
   }
 
   /**
@@ -53,14 +43,20 @@ object Workflow {
     @inline
     def validate: Try[Workflow] = {
       Try {
-        val input = workflow.input.toOption.orDie("No input specified")
-        val outputs = workflow.outputs.toOption.orDie("No outputs specified")
-        val sources = workflow.sources.map(_.map(_.validate match {
+        val input = workflow.input.map(_.validate match {
+          case Success(v) => v
+          case Failure(e) => throw js.JavaScriptException(e.getMessage)
+        }).orDie("No input specified")
+        val outputs = workflow.outputs.map(_.map(_.validate match {
+          case Success(v) => v
+          case Failure(e) => throw js.JavaScriptException(e.getMessage)
+        })).orDie("No outputs specified")
+        val variables = workflow.variables.map(_.map(_.validate match {
           case Success(v) => v
           case Failure(e) => throw js.JavaScriptException(e.getMessage)
         })).getOrElse(js.Array())
         val onError = workflow.onError.toOption
-        new Workflow(input, outputs, onError, sources)
+        new Workflow(input, outputs, onError, variables)
       }
     }
   }

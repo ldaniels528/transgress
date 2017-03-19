@@ -1,0 +1,24 @@
+{
+  "input": {
+    "name": "listing-activity",
+    "type": "file",
+    "path": "unknown",
+    "format": "psv",
+    "columnHeaders": true
+  },
+  "outputs": [{
+    "name": "listing-activity-json",
+    "type": "file",
+    "path": "./examples/incoming/LISTING_ACTIVITY-{{$date:YYYYMMDD}}.json",
+    "format": "json"
+  }],
+  "onError": {
+    "source": {
+      "name": "error-output",
+      "type": "file",
+      "path": "errors.txt",
+      "format": "text"
+    }
+  },
+  "variables": []
+}
