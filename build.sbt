@@ -177,7 +177,7 @@ lazy val worker = (project in file("./app/webapp/worker"))
       "io.scalajs.npm" %%% "throttle" % scalaJsIoVersion
     ))
 
-lazy val broadway = (project in file("."))
+lazy val broadway_js = (project in file("."))
   .aggregate(cli, client, server, worker)
   .dependsOn(cli, client, server, worker)
   .enablePlugins(ScalaJSPlugin)
@@ -200,4 +200,4 @@ lazy val broadway = (project in file("."))
 addCommandAlias("fastOptJSCopy", ";fastOptJS;copyJS")
 
 // loads the jvm project at sbt startup
-onLoad in Global := (Command.process("project broadway", _: State)) compose (onLoad in Global).value
+onLoad in Global := (Command.process("project broadway_js", _: State)) compose (onLoad in Global).value
