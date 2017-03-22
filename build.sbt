@@ -4,9 +4,9 @@ import sbt.Keys._
 import sbt.Project.projectToRef
 import sbt._
 
-val appVersion = "0.0.1"
+val appVersion = "0.1.0"
 val appScalaVersion = "2.12.1"
-val scalaJsIoVersion = "0.3.0.8"
+val scalaJsIoVersion = "0.4.0-pre1"
 
 scalacOptions ++= Seq("-deprecation", "-encoding", "UTF-8", "-feature", "-target:jvm-1.8", "-unchecked", "-Ywarn-adapted-args", "-Ywarn-value-discard", "-Xlint")
 
@@ -109,7 +109,7 @@ lazy val cli = (project in file("./app/webapp/cli"))
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "request" % "2.79.0-3"
+      "io.scalajs.npm" %%% "request" % scalaJsIoVersion
     ))
 
 lazy val client = (project in file("./app/webapp/client"))
@@ -125,9 +125,9 @@ lazy val client = (project in file("./app/webapp/client"))
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "dom-html" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "angular" % "1.6.3-1",
-      "io.scalajs.npm" %%% "angular-ui-router" % "0.4.2-1",
-      "io.scalajs.npm" %%% "angularjs-toaster" % "2.1.0-1"
+      "io.scalajs.npm" %%% "angular" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "angular-ui-router" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "angularjs-toaster" % scalaJsIoVersion
     ))
 
 lazy val server = (project in file("./app/webapp/server"))
@@ -143,13 +143,13 @@ lazy val server = (project in file("./app/webapp/server"))
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "body-parser" % "1.16.0-3",
-      "io.scalajs.npm" %%% "express" % "4.14.1-3",
-      "io.scalajs.npm" %%% "express-fileupload" % "0.0.7-3",
-      "io.scalajs.npm" %%% "express-ws" % "2.0.0-3",
-      "io.scalajs.npm" %%% "mongodb" % "2.2.22-6",
-      "io.scalajs.npm" %%% "request" % "2.79.0-3",
-      "io.scalajs.npm" %%% "splitargs" % "0.0.7-3"
+      "io.scalajs.npm" %%% "body-parser" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "express" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "express-fileupload" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "express-ws" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "mongodb" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "request" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "splitargs" % scalaJsIoVersion
     ))
 
 lazy val worker = (project in file("./app/webapp/worker"))
@@ -165,16 +165,16 @@ lazy val worker = (project in file("./app/webapp/worker"))
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "body-parser" % "1.16.0-3",
-      "io.scalajs.npm" %%% "csvtojson" % "1.1.4-3",
-      "io.scalajs.npm" %%% "express" % "4.14.1-3",
-      "io.scalajs.npm" %%% "glob" % "7.1.1-3",
-      "io.scalajs.npm" %%% "gzip-uncompressed-size" % "1.0.0",
-      "io.scalajs.npm" %%% "mkdirp" % "0.5.1-3",
-      "io.scalajs.npm" %%% "moment" % "2.17.1-3",
-      "io.scalajs.npm" %%% "moment-duration-format" % "1.3.0",
-      "io.scalajs.npm" %%% "mongodb" % "2.2.22-6",
-      "io.scalajs.npm" %%% "throttle" % "1.0.3-1"
+      "io.scalajs.npm" %%% "body-parser" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "csvtojson" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "express" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "glob" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "gzip-uncompressed-size" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "mkdirp" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "moment" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "moment-duration-format" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "mongodb" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "throttle" % scalaJsIoVersion
     ))
 
 lazy val broadway = (project in file("."))
