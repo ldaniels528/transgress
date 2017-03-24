@@ -13,15 +13,15 @@
                 </td>
                 <td>{{ job.input }}</td>
                 <td>
-                    <span ng-show="job.status === 'RUNNING'">
+                    <span ng-show="isRunning(job)">
                         <span class="col-md-4 stats">{{ job.statistics.totalInserted | number }}</span>
                         <span class="col-md-4 stats">{{ job.statistics.bytesPerSecond | number:1 }}</span>
                         <span class="col-md-4 stats">
                             {{ job.statistics.pctComplete | number:1 }} / {{ job.statistics.completionTime | number:1 }}
                         </span>
                     </span>
-                    <span ng-show="job.status !== 'RUNNING'">
-                        <span ng-hide="job.message" ng-class="getStatusClass(job)">{{ job.status }}</span>
+                    <span ng-hide="isRunning(job)">
+                        <span ng-hide="job.message" ng-class="getStatusClass(job)">{{ job.state }}</span>
                         <span ng-show="job.message" class="error">{{ job.message }}</span>
                     </span>
                 </td>

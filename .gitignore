@@ -32,21 +32,6 @@ project/boot/
 .history
 .cache
 
-broadway-web-client-fastopt.js
-broadway-web-client-fastopt.js.map
-broadway-web-client-launcher.js
-broadway-webapp-client-fastopt.js
-broadway-webapp-client-fastopt.js.map
-broadway-webapp-client-launcher.js
-broadway-webclient-fastopt.js
-broadway-webclient-fastopt.js.map
-broadway-webclient-launcher.js
-broadway-cli-fastopt.js
-broadway-cli-fastopt.js.map
-broadway-server-fastopt.js
-broadway-server-fastopt.js.map
-broadway-worker-fastopt.js
-broadway-worker-fastopt.js.map
 LISTING_ACTIVITY_20170209.txt.gz
 LISTING_ACTIVITY_20170309.txt.gz
 LISTING_ACTIVITY_20170310.txt.gz
@@ -63,3 +48,12 @@ broadway-web-client-test-fastopt.js.map
 example/incoming
 example/work
 example/archive
+bourne-web-client-fastopt.js
+bourne-web-client-fastopt.js.map
+bourne-web-client-launcher.js
+bourne-cli-fastopt.js
+bourne-cli-fastopt.js.map
+bourne-server-fastopt.js
+bourne-server-fastopt.js.map
+bourne-worker-fastopt.js
+bourne-worker-fastopt.js.map

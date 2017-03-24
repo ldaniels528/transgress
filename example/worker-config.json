@@ -1,31 +1,31 @@
 {
   "baseDirectory": "./example",
   "maxConcurrency": 2,
-  "workflows": [
+  "triggers": [
     {
       "name": "UserAgentsTSV",
-      "config": "UserAgentsTSV.json",
+      "workflowName": "UserAgentsTSV.json",
       "patterns": [
         "useragents*.tsv"
       ]
     },
     {
       "name": "UserAgentsJSON",
-      "config": "UserAgentsJSON.json",
+      "workflowName": "UserAgentsJSON.json",
       "patterns": [
         "useragents*.json"
       ]
     },
     {
       "name": "UserAgentsFIXED",
-      "config": "UserAgentsFIXED.json",
+      "workflowName": "UserAgentsFIXED.json",
       "patterns": [
         "useragents*.csv"
       ]
     },
     {
       "name": "ListingActivityTxt",
-      "config": "ListingActivityTxt.json",
+      "workflowName": "ListingActivityTxt.json",
       "patterns": [
         "LISTING_ACTIVITY*.txt",
         "LISTING_ACTIVITY*.txt.gz"

@@ -6,7 +6,7 @@ import sbt._
 
 val appVersion = "0.1.0"
 val appScalaVersion = "2.12.1"
-val scalaJsIoVersion = "0.4.0-pre1"
+val scalaJsIoVersion = "0.4.0-pre2"
 
 scalacOptions ++= Seq("-deprecation", "-encoding", "UTF-8", "-feature", "-target:jvm-1.8", "-unchecked", "-Ywarn-adapted-args", "-Ywarn-value-discard", "-Xlint")
 
@@ -15,13 +15,13 @@ javacOptions ++= Seq("-Xlint:deprecation", "-Xlint:unchecked", "-source", "1.8",
 lazy val copyJS = TaskKey[Unit]("copyJS", "Copy JavaScript files to root directory")
 copyJS := {
   val out_dir = baseDirectory.value
-  val web_dir = out_dir / "app" / "webapp" / "server" / "target" / "scala-2.12"
-  val cli_dir = out_dir / "app" / "webapp" / "cli" / "target" / "scala-2.12"
-  val worker_dir = out_dir / "app" / "webapp" / "worker" / "target" / "scala-2.12"
+  val web_dir = out_dir / "app" / "server" / "target" / "scala-2.12"
+  val cli_dir = out_dir / "app" / "cli" / "target" / "scala-2.12"
+  val worker_dir = out_dir / "app" / "worker" / "target" / "scala-2.12"
 
-  val files1 = Seq("", ".map") map ("broadway-server-fastopt.js" + _) map (s => (web_dir / s, out_dir / s))
-  val files2 = Seq("", ".map") map ("broadway-cli-fastopt.js" + _) map (s => (cli_dir / s, out_dir / s))
-  val files3 = Seq("", ".map") map ("broadway-worker-fastopt.js" + _) map (s => (worker_dir / s, out_dir / s))
+  val files1 = Seq("", ".map") map ("bourne-server-fastopt.js" + _) map (s => (web_dir / s, out_dir / s))
+  val files2 = Seq("", ".map") map ("bourne-cli-fastopt.js" + _) map (s => (cli_dir / s, out_dir / s))
+  val files3 = Seq("", ".map") map ("bourne-worker-fastopt.js" + _) map (s => (worker_dir / s, out_dir / s))
   IO.copy(files1 ++ files2 ++ files3, overwrite = true)
 }
 
@@ -38,7 +38,7 @@ lazy val appSettings = Seq(
   scalaJSModuleKind := ModuleKind.CommonJSModule,
   autoCompilerPlugins := true,
   relativeSourceMaps := true,
-  homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
+  homepage := Some(url("https://github.com/ldaniels528/bourne.js")),
   resolvers += Resolver.sonatypeRepo("releases"))
 
 lazy val commonSettings = Seq(
@@ -47,7 +47,7 @@ lazy val commonSettings = Seq(
   scalaVersion := appScalaVersion,
   autoCompilerPlugins := true,
   relativeSourceMaps := true,
-  homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
+  homepage := Some(url("https://github.com/ldaniels528/bourne.js")),
   resolvers += Resolver.sonatypeRepo("releases"))
 
 lazy val moduleSettings = Seq(
@@ -57,7 +57,7 @@ lazy val moduleSettings = Seq(
   scalaJSModuleKind := ModuleKind.CommonJSModule,
   autoCompilerPlugins := true,
   relativeSourceMaps := true,
-  homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
+  homepage := Some(url("https://github.com/ldaniels528/bourne.js")),
   resolvers += Resolver.sonatypeRepo("releases"))
 
 lazy val uiSettings = Seq(
@@ -68,43 +68,59 @@ lazy val uiSettings = Seq(
   persistLauncher in Test := false,
   autoCompilerPlugins := true,
   relativeSourceMaps := true,
-  homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
+  homepage := Some(url("https://github.com/ldaniels528/bourne.js")),
   resolvers += Resolver.sonatypeRepo("releases"))
 
-lazy val common = (project in file("./app/webapp/common"))
+lazy val common = (project in file("./app/common"))
   .enablePlugins(ScalaJSPlugin)
   .settings(commonSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "broadway-webapp-common",
-    organization := "com.github.ldaniels528.broadway",
+    name := "bourne-webapp-common",
+    organization := "com.github.ldaniels528.bourne",
     version := appVersion,
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion
     ))
 
-lazy val rest_common = (project in file("./app/webapp/rest_common"))
+lazy val data_access = (project in file("./app/data_access"))
+  .aggregate(common)
+  .dependsOn(common)
   .enablePlugins(ScalaJSPlugin)
   .settings(commonSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "broadway-rest-common",
-    organization := "com.github.ldaniels528.broadway",
+    name := "bourne-data-access",
+    organization := "com.github.ldaniels528.bourne",
+    version := appVersion,
+    libraryDependencies ++= Seq(
+      "io.scalajs" %%% "core" % scalaJsIoVersion,
+      "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "mongodb" % scalaJsIoVersion
+    ))
+
+lazy val rest_api = (project in file("./app/rest_api"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(commonSettings: _*)
+  .settings(testDependencies: _*)
+  .settings(
+    name := "bourne-rest-common",
+    organization := "com.github.ldaniels528.bourne",
     version := appVersion,
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "nodejs" % scalaJsIoVersion
     ))
 
-lazy val cli = (project in file("./app/webapp/cli"))
-  .aggregate(common, rest_common)
-  .dependsOn(common, rest_common)
+lazy val cli = (project in file("./app/cli"))
+  .aggregate(common, rest_api)
+  .dependsOn(common, rest_api)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "broadway-cli",
-    organization := "com.github.ldaniels528.broadway",
+    name := "bourne-cli",
+    organization := "com.github.ldaniels528.bourne",
     version := appVersion,
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
@@ -112,15 +128,15 @@ lazy val cli = (project in file("./app/webapp/cli"))
       "io.scalajs.npm" %%% "request" % scalaJsIoVersion
     ))
 
-lazy val client = (project in file("./app/webapp/client"))
+lazy val client = (project in file("./app/client"))
   .aggregate(common)
   .dependsOn(common)
   .enablePlugins(ScalaJSPlugin)
   .settings(uiSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "broadway-web-client",
-    organization := "com.github.ldaniels528.broadway",
+    name := "bourne-web-client",
+    organization := "com.github.ldaniels528.bourne",
     version := appVersion,
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
@@ -130,15 +146,15 @@ lazy val client = (project in file("./app/webapp/client"))
       "io.scalajs.npm" %%% "angularjs-toaster" % scalaJsIoVersion
     ))
 
-lazy val server = (project in file("./app/webapp/server"))
-  .aggregate(common, client, rest_common)
-  .dependsOn(common, client, rest_common)
+lazy val server = (project in file("./app/server"))
+  .aggregate(common, client, rest_api, data_access)
+  .dependsOn(common, client, rest_api, data_access)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "broadway-server",
-    organization := "com.github.ldaniels528.broadway",
+    name := "bourne-server",
+    organization := "com.github.ldaniels528.bourne",
     version := appVersion,
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
@@ -152,15 +168,15 @@ lazy val server = (project in file("./app/webapp/server"))
       "io.scalajs.npm" %%% "splitargs" % scalaJsIoVersion
     ))
 
-lazy val worker = (project in file("./app/webapp/worker"))
-  .aggregate(common, rest_common)
-  .dependsOn(common, rest_common)
+lazy val worker = (project in file("./app/worker"))
+  .aggregate(common, rest_api, data_access)
+  .dependsOn(common, rest_api, data_access)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "broadway-worker",
-    organization := "com.github.ldaniels528.broadway",
+    name := "bourne-worker",
+    organization := "com.github.ldaniels528.bourne",
     version := appVersion,
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
@@ -177,15 +193,15 @@ lazy val worker = (project in file("./app/webapp/worker"))
       "io.scalajs.npm" %%% "throttle" % scalaJsIoVersion
     ))
 
-lazy val broadway_js = (project in file("."))
+lazy val bourne_js = (project in file("."))
   .aggregate(cli, client, server, worker)
   .dependsOn(cli, client, server, worker)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "broadway.js",
-    organization := "com.github.ldaniels528.broadway",
+    name := "bourne.js",
+    organization := "com.github.ldaniels528.bourne",
     version := appVersion,
     scalaVersion := appScalaVersion,
     relativeSourceMaps := true,
@@ -200,4 +216,4 @@ lazy val broadway_js = (project in file("."))
 addCommandAlias("fastOptJSCopy", ";fastOptJS;copyJS")
 
 // loads the jvm project at sbt startup
-onLoad in Global := (Command.process("project broadway_js", _: State)) compose (onLoad in Global).value
+onLoad in Global := (Command.process("project bourne_js", _: State)) compose (onLoad in Global).value
