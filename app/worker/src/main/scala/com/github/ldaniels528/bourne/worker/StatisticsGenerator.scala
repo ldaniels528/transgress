@@ -1,10 +1,9 @@
 package com.github.ldaniels528.bourne.worker
 
-import com.github.ldaniels528.bourne.worker.StatisticsGenerator._
+import com.github.ldaniels528.bourne.BytesHelper._
 import io.scalajs.npm.moment._
 import io.scalajs.npm.moment.durationformat._
 
-import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.scalajs.js
 
@@ -73,34 +72,6 @@ class StatisticsGenerator(var sourceFileSize: Double = 0, val updateFrequency: F
       lastStats
     }
     else None
-  }
-
-}
-
-/**
-  * Statistics Generator Companion
-  * @author lawrence.daniels@gmail.com
-  */
-object StatisticsGenerator {
-  private val UnitNames = Seq("Bytes", "KB", "MB", "GB", "TB")
-
-  /**
-    * Byte Unit Enrichment
-    * @param value the given byte size
-    */
-  implicit class BytesUnitEnrichment(val value: Double) extends AnyVal {
-
-    @inline
-    def bytes: String = units(value)
-
-    @inline
-    def bps: String = units(value) + "/sec"
-
-    @tailrec
-    private def units(value: Double, unit: Int = 0): String = {
-      if (value >= 1000) units(value / 1024, unit + 1) else f"$value%.2f ${UnitNames(unit)}"
-    }
-
   }
 
 }

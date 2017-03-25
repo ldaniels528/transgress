@@ -1,4 +1,5 @@
-package com.github.ldaniels528.bourne.client.services
+package com.github.ldaniels528.bourne.client
+package services
 
 import com.github.ldaniels528.bourne.client.models.Job
 import io.scalajs.npm.angularjs.Service

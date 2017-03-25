@@ -1,5 +1,6 @@
 package com.github.ldaniels528.bourne.worker.models
 
+import com.github.ldaniels528.bourne.models.FieldLike
 import io.scalajs.util.JsUnderOrHelper._
 
 import scala.scalajs.js
@@ -19,17 +20,11 @@ class Field(val name: String, val length: Int) extends js.Object
   */
 object Field {
 
-  @js.native
-  trait Unsafe extends js.Object {
-    var name: js.UndefOr[String] = js.native
-    var length: js.UndefOr[Int] = js.native
-  }
-
   /**
-    * FieldUnsafe Enrichment
-    * @param field the given [[Field.Unsafe field]]
+    * FieldLike Enrichment
+    * @param field the given [[FieldLike field]]
     */
-  final implicit class FieldUnsafeEnrichment(val field: Field.Unsafe) extends AnyVal {
+  final implicit class FieldLikeEnrichment(val field: FieldLike) extends AnyVal {
 
     @inline
     def validate: Try[Field] = {

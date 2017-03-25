@@ -1,31 +1,55 @@
 <div ng-controller="DashboardController" ng-init="init()">
     <div>
         <div class="jobs_shown">{{ jobs.length }} job(s) shown</div>
-        <table class="col-md-12">
-            <tr>
-                <th class="col-md-2 left">Job Processor</th>
-                <th class="col-md-4 left">File / Input</th>
-                <th class="col-md-6 center">Status</th>
-            </tr>
-            <tr ng-repeat="job in jobs">
-                <td>
-                    <img ng-src="{{ getStatusBulb(job) }}"> {{ job.name }}
-                </td>
-                <td>{{ job.input }}</td>
-                <td>
+        <div class="row">
+            <div class="col-md-2 bold left">Job Processor</div>
+            <div class="col-md-4 bold left">File / Input</div>
+            <div class="col-md-2 bold center">Host</div>
+            <div class="col-md-4 bold center">Status</div>
+        </div>
+        <div class="row" ng-repeat="job in jobs">
+            <div class="col-md-2">
+                <i class="fa clickable" ng-class="job.expanded ? 'fa-minus-square-o' : 'fa-plus-square-o'" ng-click="collapseExpand(job)"></i>
+                <img ng-src="{{ getStatusBulb(job) }}"> {{ job.name }}
+            </div>
+            <div class="col-md-4">{{ job.input }}</div>
+            <div class="col-md-2">{{ job.processingHost }}</div>
+            <div class="col-md-4">
+                <span ng-hide="job.message">
+                    <span ng-class="getStatusClass(job)">{{ job.state }}</span>
                     <span ng-show="isRunning(job)">
-                        <span class="col-md-4 stats">{{ job.statistics.totalInserted | number }}</span>
-                        <span class="col-md-4 stats">{{ job.statistics.bytesPerSecond | number:1 }}</span>
-                        <span class="col-md-4 stats">
-                            {{ job.statistics.pctComplete | number:1 }} / {{ job.statistics.completionTime | number:1 }}
-                        </span>
+                        <span class="null">&#8212;</span>
+                        {{ job.statistics.completionTime | duration }}
                     </span>
-                    <span ng-hide="isRunning(job)">
-                        <span ng-hide="job.message" ng-class="getStatusClass(job)">{{ job.state }}</span>
-                        <span ng-show="job.message" class="error">{{ job.message }}</span>
-                    </span>
-                </td>
-            </tr>
-        </table>
+                </span>
+                <span ng-show="job.message" class="error">{{ job.message }}</span>
+            </div>
+
+            <div ng-show="job.expanded && isRunning(job)">
+                <table class="col-md-11" style="float: right">
+                    <tr>
+                        <th class="stats">Records</th>
+                        <th class="stats">Record/sec</th>
+                        <th class="stats">Bytes Read</th>
+                        <th class="stats">Bytes/sec</th>
+                        <th class="stats">% Complete</th>
+                        <th class="stats">ETC</th>
+                    </tr>
+                    <tr>
+                        <td class="stats">
+                            {{ job.statistics.totalInserted | number }}
+                            <span style="color: #00aa00">
+                                <i class="fa fa-arrow-up"></i> {{ job.statistics.recordsDelta | number }}
+                            </span>
+                        </td>
+                        <td class="stats">{{ job.statistics.recordsPerSecond | number:1 }}</td>
+                        <td class="stats">{{ job.statistics.bytesRead | bytes }}</td>
+                        <td class="stats">{{ job.statistics.bytesPerSecond | bps }}</td>
+                        <td class="stats">{{ job.statistics.pctComplete | number:1 }}</td>
+                        <td class="stats">{{ job.statistics.completionTime | duration }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
     </div>
 </div>

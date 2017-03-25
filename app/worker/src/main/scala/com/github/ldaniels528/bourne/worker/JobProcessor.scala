@@ -1,20 +1,19 @@
 package com.github.ldaniels528.bourne.worker
 
-import com.github.ldaniels528.bourne.dao.JobDAO
-import com.github.ldaniels528.bourne.dao.JobDAO._
 import com.github.ldaniels528.bourne.models.JobStates.JobState
-import com.github.ldaniels528.bourne.models.{Job, JobStates, JobStatistics}
-import com.github.ldaniels528.bourne.rest.LoggerFactory
+import com.github.ldaniels528.bourne.models.{JobStates, StatisticsLike, WorkflowLike}
+import com.github.ldaniels528.bourne.rest.{Job, LoggerFactory}
 import com.github.ldaniels528.bourne.worker.JobProcessor.{FileWatch, _}
-import com.github.ldaniels528.bourne.worker.devices.{DeviceFactory, InputDevice, OutputDevice}
+import com.github.ldaniels528.bourne.worker.devices._
 import com.github.ldaniels528.bourne.worker.models.Workflow
+import com.github.ldaniels528.bourne.worker.models.Workflow._
+import com.github.ldaniels528.bourne.worker.rest.{JobClient, WorkflowClient}
 import io.scalajs.JSON
 import io.scalajs.nodejs.fs.{Fs, Stats}
 import io.scalajs.nodejs.path.Path
 import io.scalajs.nodejs.{Error, setTimeout}
 import io.scalajs.npm.glob.{Glob, _}
 import io.scalajs.npm.mkdirp.Mkdirp
-import io.scalajs.npm.mongodb.{Db, ObjectID}
 import io.scalajs.util.DateHelper._
 import io.scalajs.util.DurationHelper._
 import io.scalajs.util.JsUnderOrHelper._
@@ -30,11 +29,9 @@ import scala.util.{Failure, Success, Try}
   * Job Processor
   * @author lawrence.daniels@gmail.com
   */
-class JobProcessor()(implicit config: WorkerConfig, db: Db, ec: ExecutionContext) {
+class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowDAO: WorkflowClient, ec: ExecutionContext) {
   private val logger = LoggerFactory.getLogger(getClass)
   private val watching = js.Dictionary[FileWatch]()
-  private implicit val jobDAO = db.getJobDAO
-  private val jobs = js.Dictionary[Job]()
   private var active = 0
 
   /**
@@ -46,33 +43,37 @@ class JobProcessor()(implicit config: WorkerConfig, db: Db, ec: ExecutionContext
 
     // if no process is active, start one ...
     if (active < config.getMaxConcurrency) {
-      jobs.find(_._2.state == JobStates.QUEUED) foreach { case (_, job) =>
-        active += 1
+      jobDAO.getNextJob() foreach {
+        case Some(job) =>
+          active += 1
 
-        val outcome = for {
-          _ <- job.changeState(JobStates.RUNNING)
-          workflow <- loadWorkflow(job.workflowConfig)
-          stats <- compileAndRunWorkflow(workflow)(job)
-          _ <- job.changeState(JobStates.SUCCESS)
-        } yield stats
+          val outcome = for {
+            _ <- job.changeState(JobStates.QUEUED)
+            workflow <- loadWorkflow(job)
+            _ <- job.changeState(JobStates.RUNNING)
+            stats <- compileAndRunWorkflow(workflow)(job)
+            _ <- job.changeState(JobStates.SUCCESS)
+          } yield stats
 
-        outcome onComplete {
-          case Success(stats) =>
-            job.info(s"File '${job.input}' completed successfully")
-            job.info(s"$stats")
+          outcome onComplete {
+            case Success(stats) =>
+              job.info(s"File '${job.input}' completed successfully")
+              job.info(s"$stats")
 
-          case Failure(e) =>
-            job.error(s"File '${job.input}' failed")
-            job.error(s"${e.getMessage}")
-            job.changeState(JobStates.STOPPED, e.getMessage)
-        }
+            case Failure(e) =>
+              job.error(s"File '${job.input}' failed")
+              job.error(s"${e.getMessage}", e)
+              job.changeState(JobStates.STOPPED, e.getMessage)
+          }
 
-        outcome onComplete { _ =>
-          active -= 1
+          outcome onComplete { _ =>
+            active -= 1
 
-          // remove the job
-          jobs.find(_._2.id == job.id).foreach(t => jobs.remove(t._1))
-        }
+            // remove the job
+            jobDAO.untrackJob(job)
+          }
+        case None =>
+        // No jobs found
       }
     }
   }
@@ -85,7 +86,7 @@ class JobProcessor()(implicit config: WorkerConfig, db: Db, ec: ExecutionContext
       Glob.async(s"${config.incomingDirectory}/$pattern").future onComplete {
         case Success(files) =>
           for {
-            file <- files if !watching.contains(file) && !jobs.contains(file)
+            file <- files if !watching.contains(file) && !jobDAO.isTracked(file)
           } ensureCompleteFile(trigger, file)
         case Failure(e) =>
           logger.error(s"${trigger.name}: Failed while searching for new files: ${e.getMessage}")
@@ -118,29 +119,27 @@ class JobProcessor()(implicit config: WorkerConfig, db: Db, ec: ExecutionContext
     }
   }
 
-  private def queueForProcessing(workflowConfig: Trigger, incomingFile: String) = {
+  private def queueForProcessing(trigger: Trigger, incomingFile: String) = {
     for {
-      name <- workflowConfig.name
+      name <- trigger.name
       workFile <- config.workFile(incomingFile)
-      workflowConfigName <- workflowConfig.workflowName
-      workflowConfigPath <- config.workflow(workflowConfigName)
+      workflowName <- trigger.workflowName
+      workflowPath <- config.workflow(workflowName)
     } {
-      val job = new Job(id = new ObjectID().toHexString, name = name, input = incomingFile, workflowConfig = workflowConfigPath)
-      logger.info(s"$name: Created job ${job.id} (${job.name}) for file '$incomingFile'...")
-
+      logger.info(s"$name: Queuing '$incomingFile' (workflow $workflowPath)")
       val outcome = for {
-        r <- jobDAO.create(job.toData).toFuture
-        _ = logger.info(s"r = ${JSON.stringify(r)}")
-        _ <- job.changeState(JobStates.QUEUED)
-      } yield ()
+        job <- jobDAO.createJob(new Job(_id = js.undefined, name = name, input = incomingFile, workflowConfig = workflowPath, state = JobStates.NEW))
+      //_ <- job.changeState(JobStates.QUEUED)
+      } yield job
 
       outcome onComplete {
-        case Success(_) =>
+        case Success(job) =>
+          logger.info(s"$name: Created job ${job._id} (${job.name}) for file '$incomingFile'...")
           job.info(s"File '$workFile' is queued for processing...")
-          jobs(incomingFile) = job
+          jobDAO.trackJob(incomingFile, job)
           watching.remove(incomingFile)
         case Failure(e) =>
-          logger.error(s"Failed to move '$incomingFile' to '${config.workDirectory}': ${e.getMessage}")
+          logger.error(s"Failed to move '$incomingFile' to '${config.workDirectory}': ${e.getMessage}", e)
         // TODO retry up to N times?
       }
     }
@@ -151,10 +150,10 @@ class JobProcessor()(implicit config: WorkerConfig, db: Db, ec: ExecutionContext
     * @param workflowRaw the unverified workflow
     * @return the results of the execution
     */
-  private def compileAndRunWorkflow(workflowRaw: Workflow.Unsafe)(implicit job: Job) = {
+  private def compileAndRunWorkflow(workflowRaw: WorkflowLike)(implicit job: Job) = {
     Try(compile(workflowRaw)) match {
       case Success(Some(workflow)) => runWorkflow(workflow)
-      case Success(None) => Future.failed(js.JavaScriptException(s"Failed to compile for ${job.id} (${job.name})"))
+      case Success(None) => Future.failed(js.JavaScriptException(s"Failed to compile for ${job._id} (${job.name})"))
       case Failure(e) => Future.failed(e)
     }
   }
@@ -164,24 +163,35 @@ class JobProcessor()(implicit config: WorkerConfig, db: Db, ec: ExecutionContext
     * @param workflowRaw the unverified workflow
     * @return the fully verified workflow
     */
-  private def compile(workflowRaw: Workflow.Unsafe)(implicit job: Job) = {
+  private def compile(workflowRaw: WorkflowLike)(implicit job: Job) = {
     workflowRaw.validate match {
       case Success(workflow) =>
-        val inputFilePath = ExpressionEvaluator.evaluate(job.input)
+        val input = job.input.orDie(s"No input source defined for job #${job._id.orNull}")
+        val inputFilePath = ExpressionEvaluator.evaluate(input)
 
         // override the input source's path
         job.info(s"Overriding source ${workflow.input.name}'s path as '$inputFilePath'")
         workflow.input.path = inputFilePath
         Some(workflow)
       case Failure(e) =>
-        job.error(s"Invalid workflow: ${e.getMessage}")
+        job.error(s"Invalid workflow: ${e.getMessage}", e)
         None
     }
   }
 
-  private def loadWorkflow(path: String)(implicit ec: ExecutionContext): Future[Workflow.Unsafe] = {
-    logger.info(s"Loading workflow '$path'...")
-    Fs.readFileAsync(path).future map (buf => JSON.parseAs[Workflow.Unsafe](buf.toString()))
+  private def loadWorkflow(job: Job)(implicit ec: ExecutionContext): Future[WorkflowLike] = {
+    job.workflowConfig.toOption match {
+      case Some(workflowRef) =>
+        job.info(s"Loaded workflow '$workflowRef' from ${config.master}...")
+        workflowDAO.findByName(workflowRef) flatMap {
+          case Some(workflow) => Future.successful(workflow)
+          case None =>
+            logger.info(s"Loading workflow '$workflowRef'...")
+            Fs.readFileAsync(workflowRef).future map (buf => JSON.parseAs[WorkflowLike](buf.toString()))
+        }
+      case None =>
+        Future.failed(js.JavaScriptException(s"No workflow specified for job ${job._id.orNull}"))
+    }
   }
 
   /**
@@ -221,7 +231,10 @@ class JobProcessor()(implicit config: WorkerConfig, db: Db, ec: ExecutionContext
       statsGen.update() foreach { statistics =>
         job.info(statistics.toString)
         job.statistics = statistics.toModel
-        jobDAO.updateJob(job.toData)
+        for {
+          _id <- job._id
+          statistics <- job.statistics
+        } jobDAO.updateStatistics(_id, statistics)
       }
 
       // write the data to all output devices
@@ -230,13 +243,13 @@ class JobProcessor()(implicit config: WorkerConfig, db: Db, ec: ExecutionContext
 
     def onError(err: Error) {
       statsGen.failures += 1
-      job.error(err.message)
+      job.error(err.message, err)
     }
 
     def onFinish(data: js.Any): Future[Unit] = {
       job.info(s"Closing all devices...")
       for {
-        _ <- jobDAO.updateJob(job.toData).toFuture
+        _ <- jobDAO.updateJob(job)
         _ <- Future.sequence(outputDevices.map(_.flush())).map(_.sum)
         _ <- inputDevice.close()
         _ <- Future.sequence(outputDevices.map(_.close()))
@@ -269,15 +282,18 @@ object JobProcessor {
 
     @inline
     def info(message: String): Unit = {
-      logger.info(s"Job ${job.id}: $message")
+      logger.info(s"Job ${job._id}: $message")
     }
 
     @inline
-    def error(message: String): Unit = {
-      logger.error(s"Job ${job.id}: $message")
+    def error(message: String, cause: Throwable = null): Unit = {
+      logger.error(s"Job ${job._id}: $message")
+      if (cause != null) {
+        cause.printStackTrace()
+      }
     }
 
-    def changeState(state: JobState, message: String = null)(implicit config: WorkerConfig, jobDAO: JobDAO): Future[Unit] = {
+    def changeState(state: JobState, message: String = null)(implicit config: WorkerConfig, jobDAO: JobClient): Future[Unit] = {
       import JobStates._
 
       val stateFileMapping = Map[JobState, String => js.UndefOr[String]](
@@ -286,17 +302,23 @@ object JobProcessor {
       )
 
       // update the state
-      val task0 = jobDAO.changeState(job.toData, state).toFuture
+      val task0 = jobDAO.changeState(job._id.orDie("No Job ID"), state)
+
+      // display the message if set
+      if (message != null) {
+        logger.error(message)
+      }
 
       info(s"Moving '${job.input}' from ${job.state} to $state...")
       val task = stateFileMapping.get(state) match {
         case Some(f) =>
-          val newFile = f(job.input).orDie(s"$state file path could not be determined for ${job.input}")
-          val newFilePath = Path.parse(newFile).dir.orDie(s"$state directory could not be determined for ${job.input}")
+          val input = job.input.orDie(s"No input source defined for job #${job._id.orNull}")
+          val newFile = f(input).orDie(s"$state file path could not be determined for $input")
+          val newFilePath = Path.parse(newFile).dir.orDie(s"$state directory could not be determined for $input")
           for {
             _ <- task0
             _ <- Mkdirp.async(newFilePath).future
-            _ <- Fs.renameAsync(job.input, newFile).future
+            _ <- Fs.renameAsync(input, newFile).future
           } yield Some(newFile)
         case None =>
           task0.map(_ => None)
@@ -314,7 +336,7 @@ object JobProcessor {
   final implicit class JobStatisticsEnrichment(val statistics: Statistics) extends AnyVal {
 
     @inline
-    def toModel = new JobStatistics(
+    def toModel = new StatisticsLike(
       totalInserted = statistics.totalInserted.toInt,
       bytesRead = statistics.bytesRead.toInt,
       bytesPerSecond = statistics.bytesPerSecond,

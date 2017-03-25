@@ -64,8 +64,6 @@ lazy val uiSettings = Seq(
   scalacOptions ++= Seq("-feature", "-deprecation"),
   scalacOptions in(Compile, doc) ++= Seq("-no-link-warnings"),
   scalaVersion := appScalaVersion,
-  persistLauncher := true,
-  persistLauncher in Test := false,
   autoCompilerPlugins := true,
   relativeSourceMaps := true,
   homepage := Some(url("https://github.com/ldaniels528/bourne.js")),
@@ -100,6 +98,8 @@ lazy val data_access = (project in file("./app/data_access"))
     ))
 
 lazy val rest_api = (project in file("./app/rest_api"))
+  .aggregate(common)
+  .dependsOn(common)
   .enablePlugins(ScalaJSPlugin)
   .settings(commonSettings: _*)
   .settings(testDependencies: _*)
@@ -109,7 +109,8 @@ lazy val rest_api = (project in file("./app/rest_api"))
     version := appVersion,
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
-      "io.scalajs" %%% "nodejs" % scalaJsIoVersion
+      "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "request" % scalaJsIoVersion
     ))
 
 lazy val cli = (project in file("./app/cli"))
@@ -122,6 +123,7 @@ lazy val cli = (project in file("./app/cli"))
     name := "bourne-cli",
     organization := "com.github.ldaniels528.bourne",
     version := appVersion,
+    scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
@@ -138,6 +140,7 @@ lazy val client = (project in file("./app/client"))
     name := "bourne-web-client",
     organization := "com.github.ldaniels528.bourne",
     version := appVersion,
+    scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "dom-html" % scalaJsIoVersion,
@@ -156,6 +159,7 @@ lazy val server = (project in file("./app/server"))
     name := "bourne-server",
     organization := "com.github.ldaniels528.bourne",
     version := appVersion,
+    scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
@@ -178,6 +182,7 @@ lazy val worker = (project in file("./app/worker"))
     name := "bourne-worker",
     organization := "com.github.ldaniels528.bourne",
     version := appVersion,
+    scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
@@ -189,7 +194,7 @@ lazy val worker = (project in file("./app/worker"))
       "io.scalajs.npm" %%% "mkdirp" % scalaJsIoVersion,
       "io.scalajs.npm" %%% "moment" % scalaJsIoVersion,
       "io.scalajs.npm" %%% "moment-duration-format" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "mongodb" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "request" % scalaJsIoVersion,
       "io.scalajs.npm" %%% "throttle" % scalaJsIoVersion
     ))
 

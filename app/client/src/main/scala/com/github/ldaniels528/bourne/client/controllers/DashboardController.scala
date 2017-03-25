@@ -1,4 +1,5 @@
-package com.github.ldaniels528.bourne.client.controllers
+package com.github.ldaniels528.bourne.client
+package controllers
 
 import com.github.ldaniels528.bourne.client.models.Job
 import com.github.ldaniels528.bourne.client.services.DashboardService
@@ -7,6 +8,7 @@ import io.scalajs.npm.angularjs.AngularJsHelper._
 import io.scalajs.npm.angularjs.toaster.Toaster
 import io.scalajs.npm.angularjs.{Controller, Interval, Scope, injected}
 import io.scalajs.util.DurationHelper._
+import io.scalajs.util.JsUnderOrHelper._
 
 import scala.concurrent.duration._
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
@@ -35,23 +37,26 @@ class DashboardController($scope: DashboardScope, $interval: Interval, toaster: 
     * Initializes the controller
     */
   $scope.init = () => {
+    console.info(s"Initializing ${getClass.getSimpleName}...")
+
     // get the list of jobs now
-    retrieveActiveJobs()
+    refreshJobs()
 
     // and update them every 15 seconds
-    $interval(() => retrieveActiveJobs(), 15.seconds)
+    $interval(() => refreshJobs(), 15.seconds)
   }
 
   /**
     * Returns a colored bulb based on the status of the given job
     */
   $scope.getStatusBulb = (aJob: js.UndefOr[Job]) => aJob flatMap { job =>
+    import com.github.ldaniels528.bourne.models.JobStates._
     job.state flatMap {
-      case "NEW" => "images/statuses/offlight.png"
-      case "QUEUED" => "images/statuses/yellowlight.gif"
-      case "RUNNING" => "images/statuses/loading16.gif"
-      case "STOPPED" => "images/statuses/redlight.png"
-      case "SUCCESS" => "images/statuses/greenlight.png"
+      case NEW => "images/statuses/offlight.png"
+      case QUEUED => "images/statuses/yellowlight.gif"
+      case RUNNING => "images/statuses/loading16.gif"
+      case STOPPED => "images/statuses/redlight.png"
+      case SUCCESS => "images/statuses/greenlight.png"
       case _ => js.undefined
     }
   }
@@ -60,32 +65,43 @@ class DashboardController($scope: DashboardScope, $interval: Interval, toaster: 
     * Returns a class representing the status of the given job
     */
   $scope.getStatusClass = (aJob: js.UndefOr[Job]) => aJob flatMap { job =>
+    import com.github.ldaniels528.bourne.models.JobStates._
     job.state flatMap {
-      case "NEW" => "status_pending"
-      case "QUEUED" => "status_queued"
-      case "RUNNING" => "status_active"
-      case "STOPPED" => "status_failed"
-      case "SUCCESS" => "status_success"
+      case NEW => "status_pending"
+      case QUEUED => "status_queued"
+      case RUNNING => "status_active"
+      case STOPPED => "status_failed"
+      case SUCCESS => "status_success"
       case _ => js.undefined
     }
   }
 
-  $scope.isRunning = (aJob: js.UndefOr[Job]) => aJob exists { job =>
-    job.state.contains("RUNNING")
-  }
+  $scope.isRunning = (aJob: js.UndefOr[Job]) => aJob exists (_.state.contains("RUNNING"))
 
   /////////////////////////////////////////////////////////
   //    Private Methods
   /////////////////////////////////////////////////////////
 
-  private def retrieveActiveJobs() {
+  private def refreshJobs(): Unit = {
     dashboardService.getJobs.toFuture onComplete {
       case Success(response) =>
         console.log(s"Loaded ${response.data.length} job(s)")
-        $scope.$apply(() => $scope.jobs = response.data)
+        response.data.foreach(job => updateJob($scope.jobs, job))
+        $scope.$apply(() => {})
       case Failure(e) =>
         toaster.error("Initialization Error", e.displayMessage)
         console.error(e.displayMessage)
+    }
+  }
+
+  private def updateJob(jobs: js.Array[Job], job: Job): Unit = {
+    jobs.indexWhere(_._id == job._id) match {
+      case -1 => jobs.push(job)
+      case index =>
+        val theJob = jobs(index)
+        theJob.state = job.state
+        theJob.processingHost = job.processingHost
+        theJob.statistics = job.statistics
     }
   }
 

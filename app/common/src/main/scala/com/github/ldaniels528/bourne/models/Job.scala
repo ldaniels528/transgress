@@ -1,7 +1,5 @@
 package com.github.ldaniels528.bourne.models
 
-import com.github.ldaniels528.bourne.models.JobStates.JobState
-
 import scala.scalajs.js
 import scala.scalajs.js.annotation.ScalaJSDefined
 
@@ -10,19 +8,11 @@ import scala.scalajs.js.annotation.ScalaJSDefined
   * @author lawrence.daniels@gmail.com
   */
 @ScalaJSDefined
-class Job(val id: String,
+class Job(val _id: String,
           val name: String,
           var input: String,
           var workflowConfig: String,
-          var state: JobState = JobStates.NEW,
+          var state: String = JobStates.NEW,
           var message: js.UndefOr[String] = js.undefined,
-          var statistics: js.UndefOr[JobStatistics] = js.undefined) extends js.Object
+          var statistics: js.UndefOr[StatisticsLike] = js.undefined) extends js.Object
 
-/**
-  * Job States Enumeration
-  * @author lawrence.daniels@gmail.com
-  */
-object JobStates extends Enumeration {
-  type JobState = Value
-  val NEW, QUEUED, RUNNING, STOPPED, SUCCESS = Value
-}

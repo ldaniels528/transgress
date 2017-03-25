@@ -1,7 +1,7 @@
 package com.github.ldaniels528.bourne.dao
 
 import com.github.ldaniels528.bourne.models.JobStates.JobState
-import com.github.ldaniels528.bourne.models.{Job, JobStates}
+import com.github.ldaniels528.bourne.models.{Job, JobStates, StatisticsLike}
 import io.scalajs.npm.mongodb._
 
 import scala.scalajs.js
@@ -26,11 +26,17 @@ object JobDAO {
   final implicit class JobDAOEnrichment(val dao: JobDAO) extends AnyVal {
 
     @inline
-    def create(job: JobData): js.Promise[InsertWriteOpResult] = dao.insertOne(job, new WriteOptions())
+    def createJob(job: JobData): js.Promise[InsertWriteOpResult] = {
+      dao.insertOne(job, new WriteOptions())
+    }
 
     @inline
-    def changeState(job: JobData, state: JobState): js.Promise[UpdateWriteOpResultObject] = {
-      dao.updateOne(filter = doc("_id" $eq job._id), update = doc("state" $set state.toString))
+    def changeState(jobId: String, state: JobState): js.Promise[FindAndModifyWriteOpResult] = {
+      dao.findOneAndUpdate(
+        filter = doc("_id" $eq new ObjectID(jobId)),
+        update = doc("state" $set state),
+        options = new FindAndUpdateOptions(sort = doc("priority" -> 1), returnOriginal = false)
+      )
     }
 
     @inline
@@ -38,8 +44,14 @@ object JobDAO {
       dao.find[JobData](doc("state" $in js.Array(states.map(_.toString): _*)))
     }
 
+    @inline
     def updateJob(job: JobData): js.Promise[UpdateWriteOpResultObject] = {
       dao.updateOne("_id" $eq job._id, job)
+    }
+
+    @inline
+    def updateStatistics(id: String, statistics: StatisticsLike): js.Promise[UpdateWriteOpResultObject] = {
+      dao.updateOne("_id" $eq new ObjectID(id), doc("statistics" $set statistics))
     }
 
   }
@@ -53,7 +65,7 @@ object JobDAO {
     @inline
     def toData: JobData = {
       val data = new js.Object().asInstanceOf[JobData]
-      data._id = new ObjectID(job.id)
+      data._id = new ObjectID(job._id)
       data.name = job.name
       data.input = job.input
       data.workflowConfig = job.workflowConfig
@@ -73,11 +85,11 @@ object JobDAO {
 
     @inline
     def toModel = new Job(
-      id = (jobData._id getOrElse new ObjectID()).toHexString(),
+      _id = (jobData._id getOrElse new ObjectID()).toHexString(),
       name = jobData.name getOrElse "Unknown",
       input = jobData.input getOrElse "Unknown",
       workflowConfig = jobData.workflowConfig getOrElse "Unknown",
-      state = jobData.state.map(JobStates.withName) getOrElse JobStates.NEW,
+      state = jobData.state getOrElse JobStates.NEW,
       message = jobData.message,
       statistics = jobData.statistics
     )

@@ -1,6 +1,8 @@
 package com.github.ldaniels528.bourne.worker.models
 
+import com.github.ldaniels528.bourne.models.VariableLike
 import io.scalajs.util.JsUnderOrHelper._
+
 import scala.scalajs.js
 import scala.scalajs.js.annotation.ScalaJSDefined
 import scala.util.Try
@@ -10,7 +12,8 @@ import scala.util.Try
   * @author lawrence.daniels@gmail.com
   */
 @ScalaJSDefined
-class Variable(val name: String) extends js.Object
+class Variable(val name: String,
+               var value: js.UndefOr[js.Any] = js.undefined) extends js.Object
 
 /**
   * Variable Companion
@@ -18,16 +21,11 @@ class Variable(val name: String) extends js.Object
   */
 object Variable {
 
-  @js.native
-  trait Unsafe extends js.Object {
-    val name: js.UndefOr[String] = js.native
-  }
-
   /**
-    * VariableUnsafe Enrichment
-    * @param variable the given [[Variable.Unsafe variable]]
+    * VariableLike Enrichment
+    * @param variable the given [[VariableLike variable]]
     */
-  final implicit class VariableUnsafeEnrichment(val variable: Variable.Unsafe) extends AnyVal {
+  final implicit class VariableUnsafeEnrichment(val variable: VariableLike) extends AnyVal {
 
     @inline
     def validate: Try[Variable] = {

@@ -1,8 +1,8 @@
 package com.github.ldaniels528.bourne
 package client
 
-import com.github.ldaniels528.bourne.client.controllers.{DashboardController, MainController}
-import com.github.ldaniels528.bourne.client.services.{DashboardService, WebSocketService}
+import com.github.ldaniels528.bourne.client.controllers._
+import com.github.ldaniels528.bourne.client.services.{DashboardService, WebSocketService, WorkflowService}
 import io.scalajs.npm.angularjs.uirouter.{RouteProvider, RouteTo}
 import io.scalajs.npm.angularjs.{Module, Scope, Timeout, angular}
 
@@ -21,6 +21,11 @@ object BourneClientJSApp extends js.JSApp {
     val module = angular.createModule("bourne",
       js.Array("ngAnimate", "ngCookies", "ngRoute", "ngSanitize", "nvd3", "angularFileUpload", "toaster", "ui.bootstrap"))
 
+    // add the custom filters
+    module.filter("duration", Filters.duration)
+    module.filter("bytes", Filters.bytes)
+    module.filter("bps", Filters.bps)
+
     // add the controllers and services
     configureServices(module)
     configureFactories(module)
@@ -30,8 +35,11 @@ object BourneClientJSApp extends js.JSApp {
     module.config({ ($routeProvider: RouteProvider) =>
       // configure the routes
       $routeProvider
+        .when("/activity", new RouteTo(templateUrl = "/views/activity/index.html", controller = classOf[ActivityController].getSimpleName))
         .when("/dashboard", new RouteTo(templateUrl = "/views/dashboard/index.html", controller = classOf[DashboardController].getSimpleName))
         .when("/dashboard/:id", new RouteTo(templateUrl = "/views/dashboard/index.html", controller = classOf[DashboardController].getSimpleName))
+        .when("/triggers", new RouteTo(templateUrl = "/views/triggers/index.html", controller = classOf[TriggerController].getSimpleName))
+        .when("/workflows", new RouteTo(templateUrl = "/views/workflows/index.html", controller = classOf[WorkflowController].getSimpleName))
         .otherwise(new RouteTo(redirectTo = "/dashboard"))
       ()
     })
@@ -44,8 +52,11 @@ object BourneClientJSApp extends js.JSApp {
   }
 
   private def configureControllers(module: Module) {
+    module.controllerOf[ActivityController]("ActivityController")
     module.controllerOf[DashboardController]("DashboardController")
     module.controllerOf[MainController]("MainController")
+    module.controllerOf[TriggerController]("TriggerController")
+    module.controllerOf[WorkflowController]("WorkflowController")
   }
 
   private def configureFactories(module: Module): Unit = {
@@ -55,6 +66,7 @@ object BourneClientJSApp extends js.JSApp {
   private def configureServices(module: Module) {
     module.serviceOf[DashboardService]("DashboardService")
     module.serviceOf[WebSocketService]("WebSocketService")
+    module.serviceOf[WorkflowService]("WorkflowService")
   }
 
 }

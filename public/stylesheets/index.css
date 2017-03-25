@@ -2,8 +2,21 @@ body {
     margin-left: 10px;
 }
 
+.bold {
+    font-weight: bold;
+}
+
 .center {
     text-align: left;
+}
+
+.clickable {
+    cursor: pointer;
+}
+
+.error {
+    color: #ff0000;
+    font-weight: bold;
 }
 
 .left {
@@ -14,9 +27,8 @@ body {
     text-align: right;
 }
 
-.error {
-    color: #ff0000;
-    font-weight: bold;
+.null {
+    color: #aaaaaa;
 }
 
 .stats {
@@ -42,4 +54,8 @@ body {
 .title4 {
     color: #0000ff;
     font-size: 20pt;
+}
+
+.item_ident {
+    padding-left: 32px;
 }

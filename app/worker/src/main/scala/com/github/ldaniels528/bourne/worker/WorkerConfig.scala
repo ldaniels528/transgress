@@ -17,6 +17,7 @@ import scala.scalajs.js
 @js.native
 trait WorkerConfig extends js.Object {
   val baseDirectory: js.UndefOr[String] = js.native
+  val master: js.UndefOr[String] = js.native
   val maxConcurrency: js.UndefOr[Int] = js.native
   val triggers: js.UndefOr[js.Array[Trigger]] = js.native
 }
@@ -63,7 +64,7 @@ object WorkerConfig {
     def workflowDirectory = s"${config.baseDirectory}/workflows"
 
     @inline
-    def workflow(file: String): js.UndefOr[String] = getPath(file, workflowDirectory)
+    def workflow(file: String): js.UndefOr[String] = getPath(s"$file.json", workflowDirectory)
 
     private def getArchivePath(file: String, directory: String) = {
       val path = Path.parse(file)

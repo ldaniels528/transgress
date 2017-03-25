@@ -4,7 +4,7 @@ package server
 import com.github.ldaniels528.bourne.rest.LoggerFactory
 import com.github.ldaniels528.bourne.rest.ProcessHelper._
 import com.github.ldaniels528.bourne.rest.StringHelper._
-import com.github.ldaniels528.bourne.server.routes.{DashboardRoutes, _}
+import com.github.ldaniels528.bourne.server.routes._
 import io.scalajs.nodejs.process
 import io.scalajs.npm.bodyparser.{BodyParser, UrlEncodedBodyOptions}
 import io.scalajs.npm.express.fileupload.ExpressFileUpload
@@ -102,7 +102,8 @@ object BourneServer extends js.JSApp {
 
     // setup all other routes
     logger.info("Setting up all other routes...")
-    new DashboardRoutes(app, db)
+    new JobRoutes(app, db)
+    new WorkflowRoutes(app, db)
     app
   }
 

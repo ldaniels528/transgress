@@ -3,12 +3,13 @@ package com.github.ldaniels528.bourne.worker
 import com.github.ldaniels528.bourne.rest.LoggerFactory
 import com.github.ldaniels528.bourne.rest.ProcessHelper._
 import com.github.ldaniels528.bourne.rest.StringHelper._
-import com.github.ldaniels528.bourne.worker.routes.{JobRoutes, NextFunction}
+import com.github.ldaniels528.bourne.worker.rest.{JobClient, WorkflowClient}
+import com.github.ldaniels528.bourne.worker.routes.{NextFunction, WorkerRoutes}
+import io.scalajs.JSON
 import io.scalajs.nodejs.fs.Fs
 import io.scalajs.nodejs.{process, setInterval}
 import io.scalajs.npm.bodyparser.{BodyParser, UrlEncodedBodyOptions}
 import io.scalajs.npm.express._
-import io.scalajs.npm.mongodb.{Db, MongoClient}
 import io.scalajs.util.DurationHelper._
 
 import scala.concurrent.Future
@@ -26,34 +27,32 @@ object Worker extends js.JSApp {
   private val logger = LoggerFactory.getLogger(getClass)
 
   @JSExport
-  override def main(): Unit = {
-    logger.info("Starting the Bourne Worker...")
-
-    // determine the port to listen on
-    val startTime = js.Date.now()
-
-    // setup mongodb connection
-    logger.info("Loading MongoDB module...")
-    val dbConnect = process.dbConnect getOrElse "mongodb://localhost:27017/bourne"
-
-    logger.info("Connecting to database '%s'...", dbConnect)
-    MongoClient.connectAsync(dbConnect).toFuture onComplete {
-      case Success(db) => start(startTime)(db)
-      case Failure(e) =>
-        logger.error(s"Error connecting to database: ${e.getMessage}")
-    }
-  }
+  override def main(): Unit = run()
 
   /**
-    * Starts the worker
-    * @param startTime the give start time
-    * @param db        the given [[Db database]]
+    * Runs the worker application
     */
-  def start(startTime: Double)(implicit db: Db) {
+  def run(): Unit = {
+    logger.info("Starting the Bourne Worker...")
+
+    // capture the start time
+    val startTime = js.Date.now()
+
     // load the worker config
     implicit val config = WorkerConfig.load()
 
-    ensureLocalDirectories() onComplete {
+    // initialize the job & workflow clients
+    val master = config.master.getOrElse("localhost:9000")
+    implicit val jobClient = new JobClient(master)
+    implicit val workflowClient = new WorkflowClient(master)
+
+    // ensure the local processing directories exist
+    val outcome = for {
+      results <- ensureLocalDirectories()
+      _ <- downloadWorkflows()
+    } yield results
+
+    outcome onComplete {
       case Success(results) =>
         // were directories created?
         results foreach { case (directory, exists) =>
@@ -71,36 +70,19 @@ object Worker extends js.JSApp {
 
         // handle any uncaught exceptions
         process.onUncaughtException { err =>
-          logger.error("An uncaught exception was fired:")
-          logger.error(err.stack)
+          logger.error("An uncaught exception was fired:", err.stack)
         }
       case Failure(e) =>
-        logger.error(s"Failed to initialize processing directories; ${e.getMessage}")
+        logger.error(s"Failed to initialize the worker: ${e.getMessage}")
     }
   }
 
-  private def ensureLocalDirectories()(implicit config: WorkerConfig) = {
-    config.baseDirectory.toOption match {
-      case Some(baseDirectory) =>
-        logger.info(s"Ensuring the existence of processing sub-directories under '$baseDirectory'...")
-        val directories = Seq(config.incomingDirectory, config.workDirectory, config.archiveDirectory, config.workflowDirectory)
-        for {
-          result <- ensureLocalDirectory(baseDirectory)
-          results <- Future.sequence(directories map ensureLocalDirectory)
-        } yield result :: results.toList
-      case None =>
-        Future.successful(Nil)
-    }
-  }
-
-  private def ensureLocalDirectory(directory: String) = {
-    for {
-      exists <- Fs.existsAsync(directory).future
-      _ <- if (!exists) Fs.mkdirAsync(directory).future else Future.successful({})
-    } yield (directory, exists)
-  }
-
-  private def configureApplication(jobProcessor: JobProcessor)(implicit db: Db): Application = {
+  /**
+    * Configures the application
+    * @param jobProcessor the [[JobProcessor job processor]]
+    * @return the [[Application application]]
+    */
+  private def configureApplication(jobProcessor: JobProcessor): Application = {
     logger.info("Loading Express modules...")
     implicit val app = Express()
 
@@ -124,9 +106,56 @@ object Worker extends js.JSApp {
     })
 
     // setup all other routes
-    logger.info("Setting up all other routes...")
-    new JobRoutes(app)
+    logger.info("Setting up the worker routes...")
+    new WorkerRoutes(app)
     app
+  }
+
+  private def downloadWorkflows()(implicit config: WorkerConfig, workflowClient: WorkflowClient) = {
+    logger.info("Downloading workflows from master...")
+    workflowClient.findAll() flatMap { workflows =>
+      Future.sequence {
+        for {
+          workflow <- workflows.toList
+          name <- workflow.name.toList
+          workflowPath <- config.workflow(name).toList
+        } yield {
+          logger.info(s"Downloading workflow '$name' ($workflowPath) from master...")
+          Fs.writeFileAsync(workflowPath, JSON.stringify(workflow, null, 4)).future
+        }
+      }
+    }
+  }
+
+  /**
+    * Ensures all local processing directories exist
+    * @param config the given [[WorkerConfig worker configuration]]
+    * @return the promise of a list of a tuple including a directory and whether it existed on startup
+    */
+  private def ensureLocalDirectories()(implicit config: WorkerConfig) = {
+    config.baseDirectory.toOption match {
+      case Some(baseDirectory) =>
+        logger.info(s"Ensuring the existence of processing sub-directories under '$baseDirectory'...")
+        val directories = Seq(config.incomingDirectory, config.workDirectory, config.archiveDirectory, config.workflowDirectory)
+        for {
+          result <- ensureLocalDirectory(baseDirectory)
+          results <- Future.sequence(directories map ensureLocalDirectory)
+        } yield result :: results.toList
+      case None =>
+        Future.successful(Nil)
+    }
+  }
+
+  /**
+    * Ensures the existence of a specific directory
+    * @param directory the directory to check
+    * @return the promise of a tuple including the directory and whether it existed on startup
+    */
+  private def ensureLocalDirectory(directory: String) = {
+    for {
+      exists <- Fs.existsAsync(directory).future
+      _ <- if (!exists) Fs.mkdirAsync(directory).future else Future.successful({})
+    } yield (directory, exists)
   }
 
 }

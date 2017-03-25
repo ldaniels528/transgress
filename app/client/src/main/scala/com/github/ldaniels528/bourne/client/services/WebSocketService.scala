@@ -1,4 +1,5 @@
-package com.github.ldaniels528.bourne.client.services
+package com.github.ldaniels528.bourne.client
+package services
 
 import com.github.ldaniels528.bourne.RemoteEvent
 import io.scalajs.dom.html.browser.{console, window}

@@ -11,7 +11,7 @@ class ExpressionEvaluatorTest extends FunSpec {
   describe("ExpressionEvaluator") {
 
     it("should replaces template variables") {
-      val template = "./examples/incoming/LISTING_ACTIVITY-{{$date}}.json"
+      val template = "./examples/incoming/LISTING_ACTIVITY-{{$date:YYYYMMDD}}.json"
       info(s"BEFORE: $template")
       val realized = ExpressionEvaluator.evaluate(template)
       info(s"AFTER: $realized")

@@ -10,12 +10,28 @@
     <!-- Application Stylesheets -->
     <link href="stylesheets/index.css" type="text/css" rel="stylesheet" media="screen">
     <link href="stylesheets/dashboard.css" type="text/css" rel="stylesheet" media="screen">
+    <link href="stylesheets/tabs.css" type="text/css" rel="stylesheet" media="screen">
+    <link href="stylesheets/workflow.css" type="text/css" rel="stylesheet" media="screen">
 </head>
 
 <body ng-controller="MainController">
     <span class="title1">Bo<span class="title2">ur<span class="title3">ne</span></span></span>
     <span class="title4">Server</span>
     <span>v{{ version }}</span>
+
+    <!-- application tabs -->
+    <div class="tab_border">
+        <uib-tabset>
+            <uib-tab ng-repeat="tab in tabs" active="tab.active" select="changeTab(tab, $event)">
+                <uib-tab-heading>
+                    <i class="fa tab_font" ng-class="tab.icon"> {{ tab.name }}</i>
+                </uib-tab-heading>
+            </uib-tab>
+        </uib-tabset>
+    </div>
+
+    <toaster-container toaster-options="{'position-class':'toast-container','time-out':3000, 'close-button':true}">
+    </toaster-container>
 
     <div ng-cloak="" ng-view></div>
 
@@ -33,6 +49,7 @@
     <script src="/bower_components/d3/d3.min.js" type="text/javascript"></script>
     <script src="/bower_components/nvd3/build/nv.d3.min.js" type="text/javascript"></script>
     <script src="/bower_components/angular-nvd3/dist/angular-nvd3.min.js" type="text/javascript"></script>
+    <script src="/bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js" type="text/javascript"></script>
 
     <!-- JavaScript -->
     <script src="javascripts/bourne-web-client-fastopt.js"></script>

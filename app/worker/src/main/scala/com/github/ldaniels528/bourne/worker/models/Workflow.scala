@@ -1,5 +1,9 @@
-package com.github.ldaniels528.bourne.worker.models
+package com.github.ldaniels528.bourne.worker
+package models
 
+import com.github.ldaniels528.bourne.models.{OperationLike, WorkflowLike}
+import com.github.ldaniels528.bourne.worker.models.Source._
+import com.github.ldaniels528.bourne.worker.models.Variable._
 import io.scalajs.util.JsUnderOrHelper._
 
 import scala.scalajs.js
@@ -11,9 +15,10 @@ import scala.util.{Failure, Success, Try}
   * @author lawrence.daniels@gmail.com
   */
 @ScalaJSDefined
-class Workflow(val input: Source,
+class Workflow(val name: String,
+               val input: Source,
                val outputs: js.Array[Source],
-               val onError: Option[OnError],
+               val events: js.Dictionary[OperationLike],
                val variables: js.Array[Variable]) extends js.Object
 
 /**
@@ -23,26 +28,15 @@ class Workflow(val input: Source,
 object Workflow {
 
   /**
-    * Represents a Workflow (unsafe)
-    * @author lawrence.daniels@gmail.com
+    * WorkflowLike Enrichment
+    * @param workflow the given [[WorkflowLike workflow]]
     */
-  @js.native
-  trait Unsafe extends js.Object {
-    val input: js.UndefOr[Source.Unsafe] = js.native
-    val outputs: js.UndefOr[js.Array[Source.Unsafe]] = js.native
-    val onError: js.UndefOr[OnError] = js.native
-    val variables: js.UndefOr[js.Array[Variable.Unsafe]] = js.native
-  }
-
-  /**
-    * Workflow.Unsafe Enrichment
-    * @param workflow the given [[Workflow.Unsafe workflow]]
-    */
-  implicit class WorkflowUnsafeEnrichment(val workflow: Workflow.Unsafe) extends AnyVal {
+  implicit class WorkflowLikeEnrichment(val workflow: WorkflowLike) extends AnyVal {
 
     @inline
     def validate: Try[Workflow] = {
       Try {
+        val name = workflow.name.orDie("'name' is a required field")
         val input = workflow.input.map(_.validate match {
           case Success(v) => v
           case Failure(e) => throw js.JavaScriptException(e.getMessage)
@@ -55,8 +49,8 @@ object Workflow {
           case Success(v) => v
           case Failure(e) => throw js.JavaScriptException(e.getMessage)
         })).getOrElse(js.Array())
-        val onError = workflow.onError.toOption
-        new Workflow(input, outputs, onError, variables)
+        val events = workflow.events.getOrElse(js.Dictionary())
+        new Workflow(name, input, outputs, events, variables)
       }
     }
   }

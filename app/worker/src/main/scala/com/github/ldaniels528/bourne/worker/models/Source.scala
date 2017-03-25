@@ -1,5 +1,8 @@
-package com.github.ldaniels528.bourne.worker.models
+package com.github.ldaniels528.bourne.worker
+package models
 
+import com.github.ldaniels528.bourne.models.SourceLike
+import com.github.ldaniels528.bourne.worker.models.Field._
 import io.scalajs.nodejs.fs.{Fs, ReadStream}
 import io.scalajs.nodejs.zlib.Zlib
 import io.scalajs.npm.gzipuncompressedsize.{GzipUncompressedSize => GUS}
@@ -31,22 +34,6 @@ class Source(val name: String,
 object Source {
 
   /**
-    * Represents a Source (unsafe)
-    * @author lawrence.daniels@gmail.com
-    */
-  @js.native
-  trait Unsafe extends js.Object {
-    val name: js.UndefOr[String] = js.native
-    val path: js.UndefOr[String] = js.native
-    val `type`: js.UndefOr[String] = js.native
-    val format: js.UndefOr[String] = js.native
-    val columnHeaders: js.UndefOr[Boolean] = js.native
-    val fields: js.UndefOr[js.Array[Field.Unsafe]] = js.native
-    val mongoConnect: js.UndefOr[String] = js.native
-    val mongoCollection: js.UndefOr[String] = js.native
-  }
-
-  /**
     * Source Enrichment
     * @param source the given [[Source source]]
     */
@@ -72,10 +59,10 @@ object Source {
   }
 
   /**
-    * SourceUnsafe Enrichment
-    * @param source the given [[Source.Unsafe source]]
+    * SourceLike Enrichment
+    * @param source the given [[SourceLike source]]
     */
-  final implicit class SourceUnsafeEnrichment(val source: Source.Unsafe) extends AnyVal {
+  final implicit class SourceLikeEnrichment(val source: SourceLike) extends AnyVal {
 
     @inline
     def validate: Try[Source] = {

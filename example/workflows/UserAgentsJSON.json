@@ -1,17 +1,21 @@
 {
-  "input": {
-    "name": "json-input",
-    "type": "file",
-    "path": "unknown",
-    "format": "json",
-    "columnHeaders": true
-  },
-  "outputs": [{
-    "name": "csv-output",
-    "type": "file",
-    "path": "./example/incoming/useragents-{{$date:YYYYMMDD}}.csv",
-    "format": "csv",
-    "columnHeaders": true
-  }],
-  "variables": []
+    "_id": "58d4766df9e1cef75314e058",
+    "name": "UserAgentsJSON",
+    "input": {
+        "name": "json-input",
+        "type": "file",
+        "path": "unknown",
+        "format": "json",
+        "columnHeaders": true
+    },
+    "outputs": [
+        {
+            "name": "csv-output",
+            "type": "file",
+            "path": "./example/incoming/useragents-{{$date:YYYYMMDD}}.csv",
+            "format": "csv",
+            "columnHeaders": true
+        }
+    ],
+    "variables": []
 }

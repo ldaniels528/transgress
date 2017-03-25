@@ -1,16 +1,20 @@
 {
-  "input": {
-    "name": "tsv-input",
-    "type": "file",
-    "path": "unknown",
-    "format": "tsv",
-    "columnHeaders": true
-  },
-  "outputs": [{
-    "name": "json-output",
-    "type": "file",
-    "path": "./example/incoming/useragents-{{$date:YYYYMMDD}}.json",
-    "format": "json"
-  }],
-  "variables": []
+    "_id": "58d4766df9e1cef75314e057",
+    "name": "UserAgentsTSV",
+    "input": {
+        "name": "tsv-input",
+        "type": "file",
+        "path": "unknown",
+        "format": "tsv",
+        "columnHeaders": true
+    },
+    "outputs": [
+        {
+            "name": "json-output",
+            "type": "file",
+            "path": "./example/incoming/useragents-{{$date:YYYYMMDD}}.json",
+            "format": "json"
+        }
+    ],
+    "variables": []
 }
