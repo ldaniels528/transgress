@@ -3,12 +3,14 @@ package com.github.ldaniels528.bourne.worker
 import com.github.ldaniels528.bourne.rest.LoggerFactory
 import io.scalajs.JSON
 import io.scalajs.nodejs.fs.Fs
+import io.scalajs.nodejs.os.OS
 import io.scalajs.nodejs.path.Path
-import io.scalajs.nodejs.process
+import io.scalajs.npm.glob.Glob
 import io.scalajs.npm.moment.Moment
-import io.scalajs.util.OptionHelper._
+import io.scalajs.util.JsUnderOrHelper._
 
 import scala.scalajs.js
+import scala.util.Try
 
 /**
   * Worker Configuration
@@ -16,10 +18,10 @@ import scala.scalajs.js
   */
 @js.native
 trait WorkerConfig extends js.Object {
-  val baseDirectory: js.UndefOr[String] = js.native
-  val master: js.UndefOr[String] = js.native
-  val maxConcurrency: js.UndefOr[Int] = js.native
-  val triggers: js.UndefOr[js.Array[Trigger]] = js.native
+  var baseDirectory: js.UndefOr[String] = js.native
+  var master: js.UndefOr[String] = js.native
+  var maxConcurrency: js.UndefOr[Int] = js.native
+  var triggers: js.UndefOr[js.Dictionary[Trigger]] = js.native
 }
 
 /**
@@ -29,11 +31,32 @@ trait WorkerConfig extends js.Object {
 object WorkerConfig {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def load(path: js.UndefOr[String] = js.undefined): WorkerConfig = {
-    val configDirectory = path.toOption ?? process.env.get("BOURNE_HOME") getOrElse "."
+  def load(configDirectory: String): WorkerConfig = {
     val configFile = s"$configDirectory/worker-config.json"
     logger.info(s"Loading '$configFile'...")
-    JSON.parseAs[WorkerConfig](Fs.readFileSync(configFile).toString())
+
+    // load the worker configuration file
+    val config = JSON.parseAs[WorkerConfig](Fs.readFileSync(configFile).toString())
+
+    // set the base directory
+    config.baseDirectory = configDirectory
+
+    // make sure the config triggers dictionary exists
+    config.triggers = config.triggers ?? js.Dictionary[Trigger]()
+
+    // load the trigger configuration files
+    Glob.sync(s"${config.triggerDirectory}/*.json").toSeq foreach { path =>
+      Try {
+        logger.info(s"Loading trigger file '$path'...")
+        val trigger = JSON.parseAs[Trigger](Fs.readFileSync(path).toString())
+        for {
+          triggers <- config.triggers
+          name <- trigger.name
+        } triggers(name) = trigger
+      }
+    }
+
+    config
   }
 
   /**
@@ -55,17 +78,29 @@ object WorkerConfig {
     def incomingDirectory = s"${config.baseDirectory}/incoming"
 
     @inline
+    def triggerDirectory = s"${config.baseDirectory}/config/triggers"
+
+    @inline
+    def triggerFile(file: String): js.UndefOr[String] = getPath(s"$file.json", triggerDirectory)
+
+    @inline
     def workDirectory = s"${config.baseDirectory}/work"
 
     @inline
     def workFile(file: String): js.UndefOr[String] = getPath(file, workDirectory)
 
     @inline
-    def workflowDirectory = s"${config.baseDirectory}/workflows"
+    def workflowDirectory = s"${config.baseDirectory}/config/workflows"
 
     @inline
-    def workflow(file: String): js.UndefOr[String] = getPath(s"$file.json", workflowDirectory)
+    def workflowFile(file: String): js.UndefOr[String] = getPath(s"$file.json", workflowDirectory)
 
+    /**
+      * Returns the archive path for the given file
+      * @param file      the given file
+      * @param directory the given archive directory
+      * @return the archive path (e.g. "./example/archive/20170327/181910/customers.csv")
+      */
     private def getArchivePath(file: String, directory: String) = {
       val path = Path.parse(file)
       val yyyymmdd = Moment().format("YYYYMMDD")
@@ -73,15 +108,17 @@ object WorkerConfig {
       for {
         name <- path.name
         ext = path.ext getOrElse ""
-      } yield s"$directory/$yyyymmdd/$hhmmss/$name$ext"
+      } yield s"$directory/$yyyymmdd/$hhmmss/$name$ext".replaceAllLiterally(OS.EOL * 2, OS.EOL)
     }
 
+    /**
+      * Returns the sub-directory path for the given file
+      * @param file      the given file
+      * @param directory the given base directory
+      * @return the path (e.g. "./example/workflows/customers_workflow.json")
+      */
     private def getPath(file: String, directory: String) = {
-      val path = Path.parse(file)
-      for {
-        name <- path.name
-        ext = path.ext getOrElse ""
-      } yield s"$directory/$name$ext"
+      Path.parse(file).base.map(base => s"$directory/$base").map(_.replaceAllLiterally(OS.EOL * 2, OS.EOL))
     }
 
   }

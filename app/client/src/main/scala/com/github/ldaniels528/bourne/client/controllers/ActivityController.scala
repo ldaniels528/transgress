@@ -27,7 +27,10 @@ class ActivityController($scope: ActivityScope, $interval: Interval, toaster: To
     console.info(s"Initializing ${getClass.getSimpleName}...")
   }
 
-  $scope.getRunningJobs = () => $scope.jobs.filter(_.state.contains(JobStates.RUNNING))
+  /**
+    * Returns only the currently running jobs
+    */
+  $scope.getRunningJobs = () => $scope.jobs.filterNot(_.state.contains(JobStates.SUCCESS))
 
 }
 

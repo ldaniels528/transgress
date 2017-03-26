@@ -1,0 +1,9 @@
+{
+  "name": "ListingActivity",
+  "priority": 10,
+  "workflowName": "ListingActivity",
+  "patterns": [
+    "LISTING_ACTIVITY*.txt",
+    "LISTING_ACTIVITY*.txt.gz"
+  ]
+}

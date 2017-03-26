@@ -1,18 +1,20 @@
-package com.github.ldaniels528.bourne.client
-package controllers
+package com.github.ldaniels528.bourne.client.controllers
 
-import io.scalajs.dom.html.browser._
-import io.scalajs.npm.angularjs.toaster.Toaster
-import io.scalajs.npm.angularjs.{Controller, Interval, Scope}
+import io.scalajs.dom.html.browser.console
+import io.scalajs.npm.angularjs.{Controller, Scope}
 
 import scala.scalajs.js
 
 /**
-  * Dashboard Controller
+  * Slave Controller
   * @author lawrence.daniels@gmail.com
   */
-class DashboardController($scope: DashboardScope, $interval: Interval, toaster: Toaster)
-  extends Controller {
+class SlaveController($scope: SlaveScope) extends Controller {
+
+  /////////////////////////////////////////////////////////
+  //    Variables
+  /////////////////////////////////////////////////////////
+
 
   /////////////////////////////////////////////////////////
   //    Public Methods
@@ -27,12 +29,14 @@ class DashboardController($scope: DashboardScope, $interval: Interval, toaster: 
 
 }
 
+
 /**
-  * Dashboard Scope
+  * Slave Scope
   * @author lawrence.daniels@gmail.com
   */
 @js.native
-trait DashboardScope extends Scope with JobHandlingScope {
+trait SlaveScope extends Scope {
+  // variables
 
   // functions
   var init: js.Function0[Unit] = js.native

@@ -1,5 +1,6 @@
 package com.github.ldaniels528.bourne.worker
 
+import com.github.ldaniels528.bourne.AppConstants._
 import com.github.ldaniels528.bourne.rest.ProcessHelper._
 import com.github.ldaniels528.bourne.rest.StringHelper._
 import com.github.ldaniels528.bourne.rest.{JobClient, LoggerFactory, WorkflowClient}
@@ -10,6 +11,7 @@ import io.scalajs.nodejs.{process, setInterval}
 import io.scalajs.npm.bodyparser.{BodyParser, UrlEncodedBodyOptions}
 import io.scalajs.npm.express._
 import io.scalajs.util.DurationHelper._
+import io.scalajs.util.OptionHelper._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -32,13 +34,16 @@ object Worker extends js.JSApp {
     * Runs the worker application
     */
   def run(): Unit = {
-    logger.info("Starting the Bourne Worker...")
+    logger.info(f"Starting the Bourne Worker v$Version%.1f...")
+
+    // get the configuration directory
+    val configDirectory = process.env.get("BOURNE_HOME") orDie "Environment variable BOURNE_HOME is not defined"
 
     // capture the start time
     val startTime = js.Date.now()
 
     // load the worker config
-    implicit val config = WorkerConfig.load()
+    implicit val config = WorkerConfig.load(configDirectory)
 
     // initialize the job & workflow clients
     val master = config.master.getOrElse("localhost:9000")
@@ -60,7 +65,8 @@ object Worker extends js.JSApp {
 
         // start the job processor
         val jobProcessor = new JobProcessor()
-        setInterval(() => jobProcessor.run(), 5.seconds)
+        setInterval(() => jobProcessor.searchForNewFiles(), 5.seconds)
+        setInterval(() => jobProcessor.run(), 30.seconds)
 
         // setup the application
         val port = process.port getOrElse "1337"
@@ -117,7 +123,7 @@ object Worker extends js.JSApp {
         for {
           workflow <- workflows.toList
           name <- workflow.name.toList
-          workflowPath <- config.workflow(name).toList
+          workflowPath <- config.workflowFile(name).toList
         } yield {
           logger.info(s"Downloading workflow '$name' ($workflowPath) from master...")
           Fs.writeFileAsync(workflowPath, JSON.stringify(workflow, null, 4)).future

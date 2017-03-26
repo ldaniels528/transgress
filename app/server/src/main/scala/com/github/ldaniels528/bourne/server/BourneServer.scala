@@ -1,6 +1,7 @@
 package com.github.ldaniels528.bourne
 package server
 
+import com.github.ldaniels528.bourne.AppConstants._
 import com.github.ldaniels528.bourne.rest.LoggerFactory
 import com.github.ldaniels528.bourne.rest.ProcessHelper._
 import com.github.ldaniels528.bourne.rest.StringHelper._
@@ -26,7 +27,7 @@ object BourneServer extends js.JSApp {
 
   @JSExport
   override def main(): Unit = {
-    logger.info("Starting the Bourne Server...")
+    logger.info(f"Starting the Bourne Server v$Version%.1f...")
 
     // determine the port to listen on
     val startTime = js.Date.now()

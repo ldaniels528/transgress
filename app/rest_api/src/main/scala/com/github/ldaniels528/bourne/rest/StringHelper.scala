@@ -2,13 +2,13 @@ package com.github.ldaniels528.bourne.rest
 
 /**
   * String Helper
-  * @author Lawrence Daniels <lawrence.daniels@gmail.com>
+  * @author lawrence.daniels@gmail.com
   */
 object StringHelper {
 
   /**
     * String Extensions
-    * @author Lawrence Daniels <lawrence.daniels@gmail.com>
+    * @author lawrence.daniels@gmail.com
     */
   implicit class StringExtensions(val string: String) extends AnyVal {
 

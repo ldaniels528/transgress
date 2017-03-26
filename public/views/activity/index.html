@@ -1,25 +1,48 @@
 <div ng-controller="ActivityController" ng-init="init()">
     <table class="col-md-12">
         <tr>
+            <th class="stats">File</th>
+            <th class="stats">State</th>
             <th class="stats">Records</th>
             <th class="stats">Record/sec</th>
             <th class="stats">Bytes Read</th>
             <th class="stats">Bytes/sec</th>
-            <th class="stats">% Complete</th>
             <th class="stats">ETC</th>
         </tr>
-        <tr ng-repeat="job in getRunningJobs()">
+        <tr ng-repeat="job in getRunningJobs()"
+            ng-click="selectJob(job)"
+            ng-class="selectedJob == job ? 'highlight' : ''"
+            class="clickable">
             <td class="stats">
-                {{ job.statistics.totalInserted | number }}
-                <span style="color: #00aa00">
-                    <i class="fa fa-arrow-up"></i> {{ job.statistics.recordsDelta | number }}
-                </span>
+                <img ng-src="{{ getStatusBulb(job) }}"> {{ job.name }}
             </td>
-            <td class="stats">{{ job.statistics.recordsPerSecond | number:1 }}</td>
-            <td class="stats">{{ job.statistics.bytesRead | bytes }}</td>
-            <td class="stats">{{ job.statistics.bytesPerSecond | bps }}</td>
-            <td class="stats">{{ job.statistics.pctComplete | number:1 }}</td>
-            <td class="stats">{{ job.statistics.completionTime | duration }}</td>
+            <td class="stats" ng-class="getStatusClass(job)">{{ job.state }}</td>
+            <td class="stats">
+                <span ng-show="job.statistics">
+                    {{ job.statistics.totalInserted | number }}
+                    <span style="color: #00aa00">
+                        <i class="fa fa-arrow-up"></i> {{ job.statistics.recordsDelta | number }}
+                    </span>
+                </span>
+                <span ng-hide="job.statistics" class="null">&#8212;</span>
+            </td>
+            <td class="stats">
+                <span ng-show="job.statistics">{{ job.statistics.recordsPerSecond | number:1 }}</span>
+                <span ng-hide="job.statistics" class="null">&#8212;</span>
+            </td>
+            <td class="stats">
+                <span ng-show="job.statistics">{{ job.statistics.bytesRead | bytes }} ({{ job.statistics.pctComplete | number:1 }}%)</span>
+                <span ng-hide="job.statistics" class="null">&#8212;</span>
+            </td>
+            <td class="stats">
+                <span ng-show="job.statistics">{{ job.statistics.bytesPerSecond | bps }}</span>
+                <span ng-hide="job.statistics" class="null">&#8212;</span>
+            </td>
+            <td class="stats">
+                <span ng-show="job.statistics">{{ job.statistics.completionTime | duration }}</span>
+                <span ng-hide="job.statistics" class="null">&#8212;</span>
+            </td>
         </tr>
     </table>
+    <span ng-hide="getRunningJobs().length" class="warning">No current processing activity</span>
 </div>

@@ -1,17 +1,19 @@
 package com.github.ldaniels528.bourne.server
 package routes
 
-import scala.scalajs.js.JSConverters._
+import com.github.ldaniels528.bourne.RemoteEvent._
 import com.github.ldaniels528.bourne.dao.JobDAO._
 import com.github.ldaniels528.bourne.dao.JobData
-import com.github.ldaniels528.bourne.models.{JobStates, StatisticsLike}
+import com.github.ldaniels528.bourne.models.{JobStates, StatisticsLike, StatusMessage}
 import io.scalajs.JSON
 import io.scalajs.npm.express.{Application, Request, Response}
 import io.scalajs.npm.expressws.WsRouting
 import io.scalajs.npm.mongodb._
+import io.scalajs.util.JsUnderOrHelper._
 
 import scala.concurrent.ExecutionContext
 import scala.scalajs.js
+import scala.scalajs.js.JSConverters._
 import scala.util.{Failure, Success}
 
 /**
@@ -20,6 +22,10 @@ import scala.util.{Failure, Success}
   */
 class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionContext) {
   private val jobDAO = db.getJobDAO
+
+  /////////////////////////////////////////////////////////
+  //    Accessor Routes
+  /////////////////////////////////////////////////////////
 
   /**
     * Retrieves a job by ID
@@ -34,14 +40,36 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
   })
 
   /**
+    * Retrieve jobs by state
+    */
+  app.get("/api/jobs", (request: Request, response: Response, next: NextFunction) => {
+    //console.log(s"query => ${JSON.stringify(request.query)}")
+    val states = request.query.get("states") match {
+      case Some(state) => state.split("[|]").toJSArray
+      case None => JobStates.values.toJSArray
+    }
+    jobDAO.findByState(states: _*).toArray().toFuture onComplete {
+      case Success(jobs) => response.send(jobs); next()
+      case Failure(e) => response.internalServerError(e); next()
+    }
+  })
+
+  /////////////////////////////////////////////////////////
+  //    Mutator Routes
+  /////////////////////////////////////////////////////////
+
+  /**
     * Change a job's state
     */
   app.patch("/api/job/:id/state/:state", (request: Request, response: Response, next: NextFunction) => {
     val (id, state) = (request.params.apply("id"), request.params.apply("state"))
-    val outcome = jobDAO.changeState(id, state).toFuture
-    outcome onComplete {
-      case Success(result) if result.isOk && result.value != null => response.send(js.Array(result.value)); next()
-      case Success(result) => response.send(js.Array()); next()
+    val message = request.bodyAs[StatusMessage].message.flat
+    jobDAO.changeState(id, state, message).toFuture onComplete {
+      case Success(result) if result.isOk && result.value != null =>
+        WebSocketHandler.emit(JOB_UPDATE, result.value)
+        response.send(js.Array(result.value))
+        next()
+      case Success(result) => response.notFound(s"Job state not updated: ${JSON.stringify(result)}"); next()
       case Failure(e) => response.internalServerError(e); next()
     }
   })
@@ -52,21 +80,12 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
   app.patch("/api/job/:id/statistics", (request: Request, response: Response, next: NextFunction) => {
     val jobId = request.params.apply("id")
     val statistics = request.bodyAs[StatisticsLike]
-    val outcome = jobDAO.updateStatistics(jobId, statistics).toFuture
-    outcome onComplete {
-      case Success(result) if result.nModified == 1 => response.send(result); next()
-      case Success(result) => response.notFound(s"Job statistics not updated: ${JSON.stringify(result)}")
-      case Failure(e) => response.internalServerError(e); next()
-    }
-  })
-
-  /**
-    * Retrieve jobs by state
-    */
-  app.get("/api/jobs", (request: Request, response: Response, next: NextFunction) => {
-    val states = request.get("states").map(_.asInstanceOf[js.Array[String]]) getOrElse JobStates.values.toJSArray
-    jobDAO.findByState(states: _*).toArray().toFuture onComplete {
-      case Success(jobs) => response.send(jobs); next()
+    jobDAO.updateStatistics(jobId, statistics).toFuture onComplete {
+      case Success(result) if result.value != null =>
+        WebSocketHandler.emit(JOB_UPDATE, result.value)
+        response.send(result.value)
+        next()
+      case Success(result) => response.notFound(s"Job statistics not updated: ${JSON.stringify(result)}"); next()
       case Failure(e) => response.internalServerError(e); next()
     }
   })
@@ -76,9 +95,11 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
     */
   app.post("/api/jobs", (request: Request, response: Response, next: NextFunction) => {
     val job = request.bodyAs[JobData]
-    val outcome = jobDAO.createJob(job).toFuture
-    outcome onComplete {
-      case Success(result) if result.insertedCount == 1 => response.send(result); next()
+    jobDAO.createJob(job).toFuture onComplete {
+      case Success(result) if result.insertedCount == 1 =>
+        result.ops.foreach(WebSocketHandler.emit(JOB_UPDATE, _))
+        response.send(result.ops)
+        next()
       case Success(result) => response.badRequest(s"Job not created: ${JSON.stringify(result)}")
       case Failure(e) => response.internalServerError(e); next()
     }
@@ -89,14 +110,12 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
     */
   app.patch("/api/jobs/checkout/:host", (request: Request, response: Response, next: NextFunction) => {
     val host = request.params.apply("host")
-    val outcome = jobDAO.findOneAndUpdate(
-      filter = doc("state" $eq JobStates.NEW),
-      update = doc($set("state" -> JobStates.QUEUED, "processingHost" -> host)),
-      options = new FindAndUpdateOptions(sort = doc("priority" -> 1), returnOriginal = false)
-    ).toFuture
-    outcome onComplete {
-      case Success(result) if result.isOk && result.value != null => response.send(js.Array(result.value)); next()
-      case Success(result) => response.send(js.Array()); next()
+    jobDAO.checkoutJob(host).toFuture onComplete {
+      case Success(result) if result.value != null =>
+        WebSocketHandler.emit(JOB_UPDATE, result.value)
+        response.send(js.Array(result.value))
+        next()
+      case Success(_) => response.send(js.Array[js.Any]()); next()
       case Failure(e) => response.internalServerError(e); next()
     }
   })

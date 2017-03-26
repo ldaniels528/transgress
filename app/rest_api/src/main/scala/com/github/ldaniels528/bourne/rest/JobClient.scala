@@ -1,7 +1,7 @@
 package com.github.ldaniels528.bourne.rest
 
 import com.github.ldaniels528.bourne.models.JobStates.JobState
-import com.github.ldaniels528.bourne.models.StatisticsLike
+import com.github.ldaniels528.bourne.models.{StatisticsLike, StatusMessage}
 import io.scalajs.nodejs.os.OS
 import io.scalajs.npm.request.RequestOptions
 
@@ -14,8 +14,8 @@ import scala.scalajs.js
   */
 class JobClient(endpoint: String) extends AbstractRestClient(endpoint) {
 
-  def changeState(jobId: String, state: JobState)(implicit ec: ExecutionContext): Future[Job] = {
-    patch[Job](s"job/$jobId/state/$state")
+  def changeState(jobId: String, state: JobState, message: String = null)(implicit ec: ExecutionContext): Future[Job] = {
+    patch[Job](new RequestOptions(uri = getUrl(s"job/$jobId/state/$state"), json = new StatusMessage(message)))
   }
 
   def createJob(job: Job)(implicit ec: ExecutionContext): Future[Job] = {

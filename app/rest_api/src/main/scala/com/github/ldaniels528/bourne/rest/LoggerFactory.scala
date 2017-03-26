@@ -6,7 +6,7 @@ import scala.scalajs.js
 
 /**
   * Logger Factory
-  * @author Lawrence Daniels <lawrence.daniels@gmail.com>
+  * @author lawrence.daniels@gmail.com
   */
 object LoggerFactory {
   private val loggers = js.Dictionary[Logger]()
@@ -17,7 +17,7 @@ object LoggerFactory {
 
   /**
     * Represents a logger
-    * @author Lawrence Daniels <lawrence.daniels@gmail.com>
+    * @author lawrence.daniels@gmail.com
     */
   class Logger(className: String) {
 

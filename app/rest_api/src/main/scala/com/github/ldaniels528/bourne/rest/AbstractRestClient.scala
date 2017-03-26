@@ -1,10 +1,11 @@
 package com.github.ldaniels528.bourne.rest
 
 import com.github.ldaniels528.bourne.rest.LoggerFactory.Logger
-import io.scalajs.npm.request.{RequestOptions, Request => Client}
+import io.scalajs.npm.request.{RequestBody, RequestOptions, Request => Client}
 import io.scalajs.{JSON, RawOptions}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.scalajs.js
 import scala.scalajs.js.|
 
 /**
@@ -16,37 +17,37 @@ class AbstractRestClient(endpoint: String) {
 
   def get[T](uri: String)(implicit ec: ExecutionContext): Future[T] = {
     Client.getAsync(url = getUrl(uri)).future map {
-      case (response, body) => JSON.parseAs[T](body)
+      case (_, body) => parseBody[T](body)
     }
   }
 
   def patch[T](options: RequestOptions)(implicit ec: ExecutionContext): Future[T] = {
     Client.patchAsync(options).future map {
-      case (response, body) => JSON.parseAs[T](body)
+      case (_, body) => parseBody[T](body)
     }
   }
 
   def patch[T](uri: String)(implicit ec: ExecutionContext): Future[T] = {
     Client.patchAsync(url = getUrl(uri)).future map {
-      case (response, body) => JSON.parseAs[T](body)
+      case (_, body) => parseBody[T](body)
     }
   }
 
   def post[T](uri: String, options: RequestOptions | RawOptions)(implicit ec: ExecutionContext): Future[T] = {
     Client.postAsync(uri, options).future map {
-      case (response, body) => JSON.parseAs[T](body)
+      case (_, body) => parseBody[T](body)
     }
   }
 
   def post[T](options: RequestOptions)(implicit ec: ExecutionContext): Future[T] = {
     Client.postAsync(options).future map {
-      case (response, body) => JSON.parseAs[T](body)
+      case (_, body) => parseBody[T](body)
     }
   }
 
   def post[T](uri: String)(implicit ec: ExecutionContext): Future[T] = {
     Client.postAsync(url = getUrl(uri)).future map {
-      case (response, body) => JSON.parseAs[T](body)
+      case (_, body) => parseBody[T](body)
     }
   }
 
@@ -54,6 +55,13 @@ class AbstractRestClient(endpoint: String) {
     val url = s"http://$endpoint/api/$uri"
     logger.info(s"request: $url")
     url
+  }
+
+  private def parseBody[T](body: RequestBody) = {
+    body match {
+      case s if js.typeOf(s) == "string" => JSON.parseAs[T](body.asInstanceOf[String])
+      case o => o.asInstanceOf[T]
+    }
   }
 
 }

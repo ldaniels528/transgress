@@ -2,6 +2,7 @@ package com.github.ldaniels528.bourne.client
 package services
 
 import com.github.ldaniels528.bourne.RemoteEvent
+import io.scalajs.JSON
 import io.scalajs.dom.html.browser.{console, window}
 import io.scalajs.dom.ws._
 import io.scalajs.npm.angularjs._
@@ -10,12 +11,10 @@ import io.scalajs.npm.angularjs.toaster.Toaster
 import io.scalajs.util.DurationHelper._
 
 import scala.concurrent.duration._
-import scala.scalajs.js
-import scala.scalajs.js.JSON
 
 /**
   * Web Socket Service
-  * @author Lawrence Daniels <lawrence.daniels@gmail.com>
+  * @author lawrence.daniels@gmail.com
   */
 class WebSocketService($rootScope: Scope, $http: Http, $location: Location, $timeout: Timeout, toaster: Toaster)
   extends Service {
@@ -99,21 +98,18 @@ class WebSocketService($rootScope: Scope, $http: Http, $location: Location, $tim
   private def handleMessage(event: MessageEvent) {
     Option(event.data) match {
       case Some(rawMessage: String) =>
-        console.log(s"rawMessage = '$rawMessage'")
+        //console.log(s"rawMessage = '$rawMessage'")
         val message = JSON.parse(rawMessage).asInstanceOf[RemoteEvent]
         val result = for {
           action <- message.action.toOption
-          data <- message.data.toOption
+          data <- message.data.toOption.map(JSON.parse(_))
         } yield (action, data)
 
         result match {
-          case Some((action, data)) => $rootScope.$emit(action, data)
+          case Some((action, data)) => $rootScope.$broadcast(action, data)
           case None =>
             console.warn(s"Message does not contain either an 'action' or 'data' property: ${angular.toJson(message)}")
         }
-
-      case Some(data) =>
-        console.warn(s"Unrecognized event data type: ${angular.toJson(data.asInstanceOf[js.Any])}")
 
       case None =>
         console.warn(s"Unhandled event received: ${angular.toJson(event)}")

@@ -16,9 +16,13 @@ trait JobLike extends js.Object {
 
   def input: js.UndefOr[String]
 
-  def workflowConfig: js.UndefOr[String]
+  def inputSize: js.UndefOr[Double]
+
+  def workflowName: js.UndefOr[String]
 
   def state: js.UndefOr[JobState]
+
+  def lastUpdated: js.UndefOr[Double]
 
   def message: js.UndefOr[String]
 
@@ -38,6 +42,7 @@ object JobStates {
   val NEW: JobState = "NEW"
   val QUEUED: JobState = "QUEUED"
   val RUNNING: JobState = "RUNNING"
+  val PAUSED: JobState = "PAUSED"
   val STOPPED: JobState = "STOPPED"
   val SUCCESS: JobState = "SUCCESS"
 

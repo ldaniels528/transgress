@@ -1,0 +1,8 @@
+{
+  "name": "UserAgentsFIXED",
+  "priority": 3,
+  "workflowName": "UserAgentsFIXED",
+  "patterns": [
+    "useragents*.csv"
+  ]
+}

@@ -30,7 +30,7 @@
     "node-sourcemap": "^0.1.2",
     "numeral": "^1.5.3",
     "request": "^2.81.0",
-    "source-map": "^0.5.6",
+    "source-map-support": "^0.4.14",
     "splitargs": "0.0.7",
     "stylus": "^0.54.5",
     "throttle": "^1.0.3",

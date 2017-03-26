@@ -4,7 +4,7 @@ import io.scalajs.nodejs.Process
 
 /**
   * Bourne Process Helper
-  * @author Lawrence Daniels <lawrence.daniels@gmail.com>
+  * @author lawrence.daniels@gmail.com
   */
 object ProcessHelper {
 

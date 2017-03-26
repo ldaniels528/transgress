@@ -1,8 +1,6 @@
 package com.github.ldaniels528.bourne.rest
 
 import com.github.ldaniels528.bourne.models.WorkflowLike
-import io.scalajs.JSON
-import io.scalajs.npm.request.{Request => Client}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.scalajs.js
@@ -18,9 +16,7 @@ class WorkflowClient(endpoint: String) extends AbstractRestClient(endpoint) {
     * @return the promise of an array of a workflows
     */
   def findAll()(implicit ec: ExecutionContext): Future[js.Array[WorkflowLike]] = {
-    Client.getAsync(getUrl(s"workflows")).future.map {
-      case (_, body) => JSON.parseAs[js.Array[WorkflowLike]](body)
-    }
+    get[js.Array[WorkflowLike]](s"workflows")
   }
 
   /**
@@ -29,11 +25,7 @@ class WorkflowClient(endpoint: String) extends AbstractRestClient(endpoint) {
     * @return the promise of the option of a workflow
     */
   def findByName(name: String)(implicit ec: ExecutionContext): Future[Option[WorkflowLike]] = {
-    Client.getAsync(getUrl(s"workflow?name=$name")).future.map {
-      case (_, body) =>
-        logger.info(s"body => '$name' => $body")
-        JSON.parseAs[js.Array[WorkflowLike]](body)
-    } map (_.headOption)
+    get[js.Array[WorkflowLike]](s"workflow?name=$name")map (_.headOption)
   }
 
 }

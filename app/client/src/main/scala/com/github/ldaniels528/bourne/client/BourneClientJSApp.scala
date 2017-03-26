@@ -38,9 +38,10 @@ object BourneClientJSApp extends js.JSApp {
         .when("/activity", new RouteTo(templateUrl = "/views/activity/index.html", controller = classOf[ActivityController].getSimpleName))
         .when("/dashboard", new RouteTo(templateUrl = "/views/dashboard/index.html", controller = classOf[DashboardController].getSimpleName))
         .when("/dashboard/:id", new RouteTo(templateUrl = "/views/dashboard/index.html", controller = classOf[DashboardController].getSimpleName))
+        .when("/slaves", new RouteTo(templateUrl = "/views/slaves/index.html", controller = classOf[SlaveController].getSimpleName))
         .when("/triggers", new RouteTo(templateUrl = "/views/triggers/index.html", controller = classOf[TriggerController].getSimpleName))
         .when("/workflows", new RouteTo(templateUrl = "/views/workflows/index.html", controller = classOf[WorkflowController].getSimpleName))
-        .otherwise(new RouteTo(redirectTo = "/dashboard"))
+        .otherwise(new RouteTo(redirectTo = "/activity"))
       ()
     })
 
@@ -55,6 +56,7 @@ object BourneClientJSApp extends js.JSApp {
     module.controllerOf[ActivityController]("ActivityController")
     module.controllerOf[DashboardController]("DashboardController")
     module.controllerOf[MainController]("MainController")
+    module.controllerOf[SlaveController]("SlaveController")
     module.controllerOf[TriggerController]("TriggerController")
     module.controllerOf[WorkflowController]("WorkflowController")
   }

@@ -19,6 +19,10 @@ body {
     font-weight: bold;
 }
 
+.highlight {
+    background-color: #00ddff;
+}
+
 .left {
     text-align: left;
 }
@@ -58,4 +62,9 @@ body {
 
 .item_ident {
     padding-left: 32px;
+}
+
+.warning {
+    color: #ff8800;
+    font-weight: bold;
 }

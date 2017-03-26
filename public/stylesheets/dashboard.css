@@ -1,26 +1,37 @@
+.dashboard_border {
+    border: 1px solid #8c8c8c;
+    border-radius: 4px;
+    margin-top: 15px;
+    padding: 10px;
+}
+
 .jobs_shown {
     font-size: 12pt;
-    background-color: #0000ff;
-    color: #dddddd;
+    background-color: #6699ff;
+    color: #eeeeee;
     padding-left: 2px;
 }
 
-.status_active {
-    color: #0000ff;
+.status_new {
+    color: #aaaaaa;
 }
 
-.status_failed {
-    color: #ff0000;
-}
-
-.status_pending {
+.status_paused {
     color: #ffaa00;
 }
 
 .status_queued {
-    color: #aaaaaa;
+    color: #4466ff;
+}
+
+.status_running {
+    color: #00bb00;
+}
+
+.status_stopped {
+    color: #ff0000;
 }
 
 .status_success {
-    color: #00aa00;
+    color: #00bb00;
 }

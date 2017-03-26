@@ -1,40 +1,4 @@
 {
-  "baseDirectory": "./example",
   "master": "127.0.0.1:9000",
-  "maxConcurrency": 2,
-  "triggers": [
-    {
-      "name": "UserAgentsTSV",
-      "priority": 1,
-      "workflowName": "UserAgentsTSV",
-      "patterns": [
-        "useragents*.tsv"
-      ]
-    },
-    {
-      "name": "UserAgentsJSON",
-      "priority": 2,
-      "workflowName": "UserAgentsJSON",
-      "patterns": [
-        "useragents*.json"
-      ]
-    },
-    {
-      "name": "UserAgentsFIXED",
-      "priority": 3,
-      "workflowName": "UserAgentsFIXED",
-      "patterns": [
-        "useragents*.csv"
-      ]
-    },
-    {
-      "name": "ListingActivity",
-      "priority": 10,
-      "workflowName": "ListingActivity",
-      "patterns": [
-        "LISTING_ACTIVITY*.txt",
-        "LISTING_ACTIVITY*.txt.gz"
-      ]
-    }
-  ]
+  "maxConcurrency": 2
 }

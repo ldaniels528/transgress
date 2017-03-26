@@ -28,16 +28,22 @@ object Filters {
     */
   def toDuration(aTime: js.UndefOr[Double]): js.UndefOr[String] = aTime map { time =>
     // compute the age
-    var age = time
+    var age0 = time
+    var age1 = 0.0
+
     var unit = 0
-    while (unit < timeFactors.length && age >= timeFactors(unit)) {
-      age /= timeFactors(unit)
+    while (unit < timeFactors.length && age0 >= timeFactors(unit)) {
+      val timeFactor = timeFactors(unit)
+      val age = age0
+      age0 = age / timeFactor
+      age1 = age % timeFactor
       unit += 1
     }
 
     // make the age and unit names more readable
-    val unitName = timeUnits(unit) + (if (age.toInt != 1) "s" else "")
-    f"$age%.0f $unitName"
+    val unitName0 = timeUnits(unit) + (if (age0 != 1.0) "s" else "")
+    val unitName1 = if (unit > 0) timeUnits(unit - 1) + (if (age1 != 1.0) "s" else "") else ""
+    if (age1 == 0.0) f"$age0%.0f $unitName0" else f"$age0%.0f $unitName0, $age1%.0f $unitName1"
   }
 
 }

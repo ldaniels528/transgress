@@ -1,0 +1,8 @@
+{
+  "name": "UserAgentsTSV",
+  "priority": 1,
+  "workflowName": "UserAgentsTSV",
+  "patterns": [
+    "useragents*.tsv"
+  ]
+}

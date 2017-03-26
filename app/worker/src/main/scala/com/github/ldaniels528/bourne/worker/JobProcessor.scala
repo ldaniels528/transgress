@@ -10,7 +10,7 @@ import com.github.ldaniels528.bourne.worker.models.Workflow._
 import io.scalajs.JSON
 import io.scalajs.nodejs.fs.Fs
 import io.scalajs.nodejs.path.Path
-import io.scalajs.nodejs.{Error, setTimeout}
+import io.scalajs.nodejs.{Error, setImmediate, setTimeout}
 import io.scalajs.npm.glob.{Glob, _}
 import io.scalajs.npm.mkdirp.Mkdirp
 import io.scalajs.util.DateHelper._
@@ -36,13 +36,11 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
     * Runs the job processor
     */
   def run(): Unit = {
-    // search for new files
-    searchForNewFiles()
-
     // if no process is active, start one ...
     if (active < config.getMaxConcurrency) {
       jobDAO.getNextJob() foreach {
         case Some(job) =>
+          logger.info(s"job => ${JSON.stringify(job)}")
           active += 1
 
           val outcome = for {
@@ -70,15 +68,19 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
             // remove the job
             untrackJob(job)
           }
+
+          // are there more files available?
+          setImmediate(() => run())
+
         case None =>
         // No jobs found
       }
     }
   }
 
-  private def searchForNewFiles(): Unit = {
+  def searchForNewFiles(): Unit = {
     for {
-      trigger <- config.triggers getOrElse js.Array()
+      (name, trigger) <- config.triggers getOrElse js.Dictionary()
       pattern <- trigger.patterns getOrElse js.Array()
     } {
       Glob.async(s"${config.incomingDirectory}/$pattern").future onComplete {
@@ -87,7 +89,7 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
             file <- files if !isWatchedOrTracked(file)
           } ensureCompleteFile(trigger, file)
         case Failure(e) =>
-          logger.error(s"${trigger.name}: Failed while searching for new files: ${e.getMessage}")
+          logger.error(s"$name: Failed while searching for new files: ${e.getMessage}")
       }
     }
   }
@@ -104,7 +106,7 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
             logger.info(s"${trigger.name}: '$file' is still too young (${w.elapsedTime} msec)")
             setTimeout(() => ensureCompleteFile(trigger, file), 7.5.seconds)
           case _ =>
-            queueForProcessing(trigger, file)
+            queueForProcessing(trigger, file, stats.size)
         }
       case Failure(e) =>
         logger.info(s"${trigger.name}: Failed to stat '$file'")
@@ -112,24 +114,21 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
     }
   }
 
-  private def queueForProcessing(trigger: Trigger, incomingFile: String) = {
+  private def queueForProcessing(trigger: Trigger, file: String, fileSize: Double) = {
     for {
-      name <- trigger.name
-      workFile <- config.workFile(incomingFile)
+      triggerName <- trigger.name
+      workFile <- config.workFile(file)
       workflowName <- trigger.workflowName
     } {
-      logger.info(s"$name: Queuing '$incomingFile' (workflow $workflowName)")
-      val outcome = for {
-        job <- jobDAO.createJob(new Job(_id = js.undefined, name = name, input = incomingFile, workflowConfig = workflowName))
-      } yield job
-
+      logger.info(s"$triggerName: Queuing '$file' (workflow $workflowName)")
+      val outcome = jobDAO.createJob(new Job(name = file.baseFile(), input = file, inputSize = fileSize, workflowName = workflowName))
       outcome onComplete {
         case Success(job) =>
-          logger.info(s"$name: Created job ${job._id} (${job.name}) for file '$incomingFile'...")
+          logger.info(s"$triggerName: Created job ${job._id} (${job.workflowName}) for file '$file'...")
           job.info(s"File '$workFile' is queued for processing...")
-          trackJob(incomingFile, job)
+          trackJob(file, job)
         case Failure(e) =>
-          logger.error(s"Failed to move '$incomingFile' to '${config.workDirectory}': ${e.getMessage}", e)
+          logger.error(s"Failed to move '$file' to '${config.workDirectory}': ${e.getMessage}", e)
         // TODO retry up to N times?
       }
     }
@@ -171,8 +170,8 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
 
   private def loadWorkflow(job: Job)(implicit ec: ExecutionContext): Future[WorkflowLike] = {
     val results = for {
-      workflowName <- job.workflowConfig
-      workflowPath <- config.workflow(workflowName)
+      workflowName <- job.workflowName
+      workflowPath <- config.workflowFile(workflowName)
     } yield (workflowName, workflowPath)
 
     results.toOption match {
@@ -335,6 +334,13 @@ object JobProcessor {
       pctComplete = statistics.complete_%,
       completionTime = statistics.completionTime
     )
+
+  }
+
+  final implicit class FileExtensions(val file: String) extends AnyVal {
+
+    @inline
+    def baseFile(): js.UndefOr[String] = Path.parse(file).base
 
   }
 

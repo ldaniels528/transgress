@@ -15,8 +15,10 @@ trait JobData extends JobLike {
   var _id: js.UndefOr[ObjectID] = js.native
   var name: js.UndefOr[String] = js.native
   var input: js.UndefOr[String] = js.native
-  var workflowConfig: js.UndefOr[String] = js.native
+  var inputSize: js.UndefOr[Double] = js.native
+  var workflowName: js.UndefOr[String] = js.native
   var state: js.UndefOr[String] = js.native
+  var lastUpdated: js.UndefOr[Double] = js.native
   var message: js.UndefOr[String] = js.native
   var processingHost: js.UndefOr[String] = js.native
   var statistics: js.UndefOr[StatisticsLike] = js.native

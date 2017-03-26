@@ -23,7 +23,7 @@ import scala.util.{Failure, Success, Try}
   * @param source the [[Source input source]]
   * @param stream the [[ReadStream input stream]]
   */
-class TextFileInputDevice(val source: Source, stream: ReadStream)(implicit ec: ExecutionContext)
+class TextFileInputDevice(val source: Source, val stream: ReadStream)(implicit ec: ExecutionContext)
   extends InputDevice {
   private val logger = LoggerFactory.getLogger(getClass)
 

@@ -1,55 +1,100 @@
 <div ng-controller="DashboardController" ng-init="init()">
     <div>
         <div class="jobs_shown">{{ jobs.length }} job(s) shown</div>
-        <div class="row">
-            <div class="col-md-2 bold left">Job Processor</div>
-            <div class="col-md-4 bold left">File / Input</div>
-            <div class="col-md-2 bold center">Host</div>
-            <div class="col-md-4 bold center">Status</div>
-        </div>
-        <div class="row" ng-repeat="job in jobs">
-            <div class="col-md-2">
-                <i class="fa clickable" ng-class="job.expanded ? 'fa-minus-square-o' : 'fa-plus-square-o'" ng-click="collapseExpand(job)"></i>
-                <img ng-src="{{ getStatusBulb(job) }}"> {{ job.name }}
+        <div ng-class="selectedJob ? 'col-md-6' : 'col-md-12'">
+            <div class="row">
+                <div ng-class="selectedJob ? 'col-md-5' : 'col-md-2'" class="bold left">Workflow</div>
+                <div ng-class="selectedJob ? 'col-md-7' : 'col-md-4'" class="bold left">File / Input</div>
+                <div ng-hide="selectedJob" class="col-md-2 bold center">Host</div>
+                <div ng-hide="selectedJob" class="col-md-4 bold center">State</div>
             </div>
-            <div class="col-md-4">{{ job.input }}</div>
-            <div class="col-md-2">{{ job.processingHost }}</div>
-            <div class="col-md-4">
-                <span ng-hide="job.message">
-                    <span ng-class="getStatusClass(job)">{{ job.state }}</span>
-                    <span ng-show="isRunning(job)">
-                        <span class="null">&#8212;</span>
-                        {{ job.statistics.completionTime | duration }}
+            <div ng-repeat="job in jobs"
+                 ng-click="selectJob(job)"
+                 ng-class="selectedJob == job ? 'highlight' : ''" class="row">
+                <div ng-class="selectedJob ? 'col-md-5' : 'col-md-2'">
+                    <img ng-src="{{ getStatusBulb(job) }}"> {{ job.workflowName }}
+                </div>
+                <div ng-class="selectedJob ? 'col-md-7' : 'col-md-4'">{{ job.name }}</div>
+                <div ng-hide="selectedJob" class="col-md-2">
+                    <span ng-show="job.processingHost">{{ job.processingHost }}</span>
+                    <span ng-hide="job.processingHost" class="null">(UNCLAIMED)</span>
+                </div>
+                <div ng-hide="selectedJob" class="col-md-4">
+                    <span ng-hide="job.message">
+                        <span ng-class="getStatusClass(job)">{{ job.state }}</span>
+                        <span ng-show="isRunning(job)">
+                            <span class="null">&#8212;</span>
+                            {{ job.statistics.completionTime | duration }}
+                        </span>
                     </span>
-                </span>
-                <span ng-show="job.message" class="error">{{ job.message }}</span>
+                    <span ng-show="job.message" class="error">{{ job.message }}</span>
+                </div>
             </div>
-
-            <div ng-show="job.expanded && isRunning(job)">
-                <table class="col-md-11" style="float: right">
-                    <tr>
-                        <th class="stats">Records</th>
-                        <th class="stats">Record/sec</th>
-                        <th class="stats">Bytes Read</th>
-                        <th class="stats">Bytes/sec</th>
-                        <th class="stats">% Complete</th>
-                        <th class="stats">ETC</th>
-                    </tr>
-                    <tr>
-                        <td class="stats">
-                            {{ job.statistics.totalInserted | number }}
-                            <span style="color: #00aa00">
-                                <i class="fa fa-arrow-up"></i> {{ job.statistics.recordsDelta | number }}
-                            </span>
-                        </td>
-                        <td class="stats">{{ job.statistics.recordsPerSecond | number:1 }}</td>
-                        <td class="stats">{{ job.statistics.bytesRead | bytes }}</td>
-                        <td class="stats">{{ job.statistics.bytesPerSecond | bps }}</td>
-                        <td class="stats">{{ job.statistics.pctComplete | number:1 }}</td>
-                        <td class="stats">{{ job.statistics.completionTime | duration }}</td>
-                    </tr>
-                </table>
-            </div>
+        </div>
+        <div ng-show="selectedJob" ng-class="selectedJob ? 'col-md-6' : ''" class="dashboard_border">
+            <table class="col-md-12">
+                <tr>
+                    <th>Workflow</th>
+                    <td>{{ selectedJob.name }}</td>
+                </tr>
+                <tr>
+                    <th>File</th>
+                    <td>{{ selectedJob.input }}</td>
+                </tr>
+                <tr>
+                    <th>File Size</th>
+                    <td>{{ selectedJob.inputSize | bytes }}</td>
+                </tr>
+                <tr>
+                    <th>Host</th>
+                    <td>{{ selectedJob.processingHost }}</td>
+                </tr>
+                <tr>
+                    <th>State</th>
+                    <td ng-class="getStatusClass(selectedJob)">{{ selectedJob.state }}</td>
+                </tr>
+                <tr ng-show="selectedJob.statistics">
+                    <th>Records</th>
+                    <td>
+                        {{ selectedJob.statistics.totalInserted | number }}
+                        <span style="color: #00aa00">
+                            <i class="fa fa-arrow-up"></i> {{ selectedJob.statistics.recordsDelta | number }}
+                        </span>
+                    </td>
+                </tr>
+                <tr ng-show="selectedJob.statistics">
+                    <th>Record/sec</th>
+                    <td>{{ selectedJob.statistics.recordsPerSecond | number:1 }}</td>
+                </tr>
+                <tr ng-show="selectedJob.statistics">
+                    <th>Bytes Read</th>
+                    <td>{{ selectedJob.statistics.bytesRead | bytes }}</td>
+                </tr>
+                <tr ng-show="selectedJob.statistics">
+                    <th>Bytes/sec</th>
+                    <td>{{ selectedJob.statistics.bytesPerSecond | bps }}</td>
+                </tr>
+                <tr ng-show="isRunning(selectedJob)">
+                    <th>Estimated Completion</th>
+                    <td>
+                        <span ng-show="selectedJob.statistics.completionTime">{{ selectedJob.statistics.completionTime | duration }}</span>
+                        <span ng-hide="selectedJob.statistics.completionTime" class="null">N/A</span>
+                    </td>
+                </tr>
+                <tr ng-show="selectedJob.message">
+                    <th>Error</th>
+                    <td><span class="error">{{ selectedJob.message }}</span></td>
+                </tr>
+                <tr>
+                    <th>Last Updated</th>
+                    <td>{{ selectedJob.lastUpdated | date:'MM/dd/yyyy hh:mm:ss' }}</td>
+                </tr>
+                <tr>
+                    <td colspan="2" ng-click="selectJob(null)" class="clickable">
+                        <i class="fa fa-arrow-left bold" style="color: #00cc00"> Back</i>
+                    </td>
+                </tr>
+            </table>
         </div>
     </div>
 </div>

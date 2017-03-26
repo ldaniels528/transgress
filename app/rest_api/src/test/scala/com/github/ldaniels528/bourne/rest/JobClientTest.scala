@@ -20,9 +20,10 @@ class JobClientTest extends FunSpec {
       val jobClient = new JobClient("localhost:9000")
       val outcome = jobClient.createJob(new Job(
         _id = js.undefined,
-        name = "UserAgentsTSV",
+        name = "useragents_20170310.tsv",
         input = "./example/incoming/useragents_20170310.tsv",
-        workflowConfig = "UserAgentsJSON",
+        inputSize = 1024.0,
+        workflowName = "UserAgentsJSON",
         state = JobStates.NEW
       ))
 

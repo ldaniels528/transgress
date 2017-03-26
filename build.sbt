@@ -151,7 +151,7 @@ lazy val client = (project in file("./app/client"))
 
 lazy val server = (project in file("./app/server"))
   .aggregate(common, client, rest_api, data_access)
-  .dependsOn(common, client, rest_api, data_access)
+  .dependsOn(common, rest_api, data_access)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(testDependencies: _*)

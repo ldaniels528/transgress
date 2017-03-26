@@ -5,18 +5,17 @@ import java.util.UUID
 import com.github.ldaniels528.bourne.RemoteEvent
 import com.github.ldaniels528.bourne.rest.LoggerFactory
 import io.scalajs.nodejs._
-import io.scalajs.nodejs.timers.Timeout
+import io.scalajs.nodejs.timers.Immediate
 import io.scalajs.npm.express.Request
 import io.scalajs.npm.expressws.WebSocket
 
-import scala.concurrent.duration._
 import scala.scalajs.js
 import scala.scalajs.js.JSON
 import scala.util.{Failure, Success, Try}
 
 /**
   * WebSocket Handler
-  * @author Lawrence Daniels <lawrence.daniels@gmail.com>
+  * @author lawrence.daniels@gmail.com
   */
 object WebSocketHandler {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -31,12 +30,14 @@ object WebSocketHandler {
         logger.log(s"Client ${client.uid} (${client.ip}) connected")
         clients.push(client)
       case unknown =>
-        logger.warn(s"Unhandled message '$message'...")
+        logger.warn(s"Unhandled message '$unknown'...")
     }
   }
 
-  def emit(action: String, data: String): Timeout = {
-    setTimeout(() => {
+  def emit(action: String, data: js.Any): Immediate = emit(action, JSON.stringify(data))
+
+  def emit(action: String, data: String): Immediate = {
+    setImmediate(() => {
       logger.log(s"Broadcasting action '$action' with data '$data'...")
       clients.foreach(client => Try(client.send(action, data)) match {
         case Success(_) =>
@@ -47,7 +48,7 @@ object WebSocketHandler {
             case index => clients.remove(index)
           }
       })
-    }, 0.seconds)
+    })
   }
 
   /**

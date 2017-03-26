@@ -1,0 +1,8 @@
+{
+  "name": "UserAgentsJSON",
+  "priority": 2,
+  "workflowName": "UserAgentsJSON",
+  "patterns": [
+    "useragents*.json"
+  ]
+}

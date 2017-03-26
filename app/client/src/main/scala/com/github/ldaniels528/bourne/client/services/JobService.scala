@@ -11,12 +11,12 @@ import scala.scalajs.js
 
 /**
   * Job Service
-  * @author Lawrence Daniels <lawrence.daniels@gmail.com>
+  * @author lawrence.daniels@gmail.com
   */
 case class JobService($http: Http) extends Service {
 
   def getJobs(states: JobState*)(implicit ec: ExecutionContext): js.Promise[HttpResponse[js.Array[Job]]] = {
-    $http.get(if(states.nonEmpty) s"/api/jobs?${states.map(s => s"states=$s").mkString("&")}" else "/api/jobs")
+    $http.get(if(states.nonEmpty) s"/api/jobs?states=${states.mkString("|")}" else "/api/jobs")
   }
 
 }
