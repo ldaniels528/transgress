@@ -1,7 +1,6 @@
-package com.github.ldaniels528.bourne.worker.rest
+package com.github.ldaniels528.bourne.rest
 
 import com.github.ldaniels528.bourne.models.JobStates
-import com.github.ldaniels528.bourne.rest.Job
 import io.scalajs.JSON
 import org.scalatest.FunSpec
 

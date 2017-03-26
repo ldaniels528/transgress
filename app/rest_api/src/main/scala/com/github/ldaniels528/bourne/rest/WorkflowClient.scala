@@ -1,5 +1,4 @@
-package com.github.ldaniels528.bourne.worker
-package rest
+package com.github.ldaniels528.bourne.rest
 
 import com.github.ldaniels528.bourne.models.WorkflowLike
 import io.scalajs.JSON
@@ -9,7 +8,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.scalajs.js
 
 /**
-  * Workflow Client
+  * Workflow REST Client
   * @author lawrence.daniels@gmail.com
   */
 class WorkflowClient(endpoint: String) extends AbstractRestClient(endpoint) {

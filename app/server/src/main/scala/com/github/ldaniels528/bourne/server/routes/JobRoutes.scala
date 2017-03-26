@@ -1,12 +1,11 @@
-package com.github.ldaniels528.bourne
-package server
+package com.github.ldaniels528.bourne.server
 package routes
 
+import scala.scalajs.js.JSConverters._
 import com.github.ldaniels528.bourne.dao.JobDAO._
 import com.github.ldaniels528.bourne.dao.JobData
 import com.github.ldaniels528.bourne.models.{JobStates, StatisticsLike}
 import io.scalajs.JSON
-import io.scalajs.nodejs.console
 import io.scalajs.npm.express.{Application, Request, Response}
 import io.scalajs.npm.expressws.WsRouting
 import io.scalajs.npm.mongodb._
@@ -30,7 +29,7 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
     jobDAO.findOneAsync[JobData](doc("_id" $eq new ObjectID(id))) onComplete {
       case Success(Some(job)) => response.send(js.Array(job)); next()
       case Success(None) => response.send(js.Array()); next()
-      case Failure(e) => response.internalServerError(e)
+      case Failure(e) => response.internalServerError(e); next()
     }
   })
 
@@ -43,7 +42,7 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
     outcome onComplete {
       case Success(result) if result.isOk && result.value != null => response.send(js.Array(result.value)); next()
       case Success(result) => response.send(js.Array()); next()
-      case Failure(e) => response.internalServerError(e)
+      case Failure(e) => response.internalServerError(e); next()
     }
   })
 
@@ -57,7 +56,7 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
     outcome onComplete {
       case Success(result) if result.nModified == 1 => response.send(result); next()
       case Success(result) => response.notFound(s"Job statistics not updated: ${JSON.stringify(result)}")
-      case Failure(e) => response.internalServerError(e)
+      case Failure(e) => response.internalServerError(e); next()
     }
   })
 
@@ -65,12 +64,10 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
     * Retrieve jobs by state
     */
   app.get("/api/jobs", (request: Request, response: Response, next: NextFunction) => {
-    jobDAO.findByState(JobStates.values.toSeq: _*).toArray().toFuture onComplete {
-      case Success(jobs) =>
-        response.send(jobs)
-        next()
-      case Failure(e) =>
-        response.internalServerError(e)
+    val states = request.get("states").map(_.asInstanceOf[js.Array[String]]) getOrElse JobStates.values.toJSArray
+    jobDAO.findByState(states: _*).toArray().toFuture onComplete {
+      case Success(jobs) => response.send(jobs); next()
+      case Failure(e) => response.internalServerError(e); next()
     }
   })
 
@@ -81,12 +78,8 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
     val job = request.bodyAs[JobData]
     val outcome = jobDAO.createJob(job).toFuture
     outcome onComplete {
-      case Success(result) if result.insertedCount == 1 =>
-        console.info(s"/api/jobs [out] result = ${JSON.stringify(result.ops)}")
-        response.send(result); next()
-      case Success(result) =>
-        console.log(s"result = ${JSON.stringify(result)}")
-        response.badRequest(s"Job not created: ${JSON.stringify(result)}")
+      case Success(result) if result.insertedCount == 1 => response.send(result); next()
+      case Success(result) => response.badRequest(s"Job not created: ${JSON.stringify(result)}")
       case Failure(e) => response.internalServerError(e); next()
     }
   })
@@ -104,7 +97,7 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
     outcome onComplete {
       case Success(result) if result.isOk && result.value != null => response.send(js.Array(result.value)); next()
       case Success(result) => response.send(js.Array()); next()
-      case Failure(e) => response.internalServerError(e)
+      case Failure(e) => response.internalServerError(e); next()
     }
   })
 

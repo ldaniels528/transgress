@@ -1,9 +1,8 @@
 package com.github.ldaniels528.bourne.worker
 
-import com.github.ldaniels528.bourne.rest.LoggerFactory
 import com.github.ldaniels528.bourne.rest.ProcessHelper._
 import com.github.ldaniels528.bourne.rest.StringHelper._
-import com.github.ldaniels528.bourne.worker.rest.{JobClient, WorkflowClient}
+import com.github.ldaniels528.bourne.rest.{JobClient, LoggerFactory, WorkflowClient}
 import com.github.ldaniels528.bourne.worker.routes.{NextFunction, WorkerRoutes}
 import io.scalajs.JSON
 import io.scalajs.nodejs.fs.Fs

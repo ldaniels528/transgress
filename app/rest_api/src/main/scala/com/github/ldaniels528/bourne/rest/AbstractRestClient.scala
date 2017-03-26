@@ -1,9 +1,8 @@
-package com.github.ldaniels528.bourne.worker.rest
+package com.github.ldaniels528.bourne.rest
 
-import com.github.ldaniels528.bourne.rest.LoggerFactory
 import com.github.ldaniels528.bourne.rest.LoggerFactory.Logger
-import io.scalajs.{JSON, RawOptions}
 import io.scalajs.npm.request.{RequestOptions, Request => Client}
+import io.scalajs.{JSON, RawOptions}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.scalajs.js.|

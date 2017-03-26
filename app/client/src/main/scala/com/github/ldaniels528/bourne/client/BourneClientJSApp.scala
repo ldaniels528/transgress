@@ -2,7 +2,7 @@ package com.github.ldaniels528.bourne
 package client
 
 import com.github.ldaniels528.bourne.client.controllers._
-import com.github.ldaniels528.bourne.client.services.{DashboardService, WebSocketService, WorkflowService}
+import com.github.ldaniels528.bourne.client.services.{JobService, WebSocketService, WorkflowService}
 import io.scalajs.npm.angularjs.uirouter.{RouteProvider, RouteTo}
 import io.scalajs.npm.angularjs.{Module, Scope, Timeout, angular}
 
@@ -64,7 +64,7 @@ object BourneClientJSApp extends js.JSApp {
   }
 
   private def configureServices(module: Module) {
-    module.serviceOf[DashboardService]("DashboardService")
+    module.serviceOf[JobService]("JobService")
     module.serviceOf[WebSocketService]("WebSocketService")
     module.serviceOf[WorkflowService]("WorkflowService")
   }

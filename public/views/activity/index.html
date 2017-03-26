@@ -1,3 +1,25 @@
 <div ng-controller="ActivityController" ng-init="init()">
-
+    <table class="col-md-12">
+        <tr>
+            <th class="stats">Records</th>
+            <th class="stats">Record/sec</th>
+            <th class="stats">Bytes Read</th>
+            <th class="stats">Bytes/sec</th>
+            <th class="stats">% Complete</th>
+            <th class="stats">ETC</th>
+        </tr>
+        <tr ng-repeat="job in jobs">
+            <td class="stats">
+                {{ job.statistics.totalInserted | number }}
+                <span style="color: #00aa00">
+                    <i class="fa fa-arrow-up"></i> {{ job.statistics.recordsDelta | number }}
+                </span>
+            </td>
+            <td class="stats">{{ job.statistics.recordsPerSecond | number:1 }}</td>
+            <td class="stats">{{ job.statistics.bytesRead | bytes }}</td>
+            <td class="stats">{{ job.statistics.bytesPerSecond | bps }}</td>
+            <td class="stats">{{ job.statistics.pctComplete | number:1 }}</td>
+            <td class="stats">{{ job.statistics.completionTime | duration }}</td>
+        </tr>
+    </table>
 </div>

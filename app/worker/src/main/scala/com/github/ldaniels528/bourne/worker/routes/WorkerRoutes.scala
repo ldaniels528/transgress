@@ -1,8 +1,8 @@
 package com.github.ldaniels528.bourne.worker.routes
 
 import com.github.ldaniels528.bourne.models.JobStates
+import com.github.ldaniels528.bourne.rest.JobClient
 import com.github.ldaniels528.bourne.worker.WorkerConfig
-import com.github.ldaniels528.bourne.worker.rest.JobClient
 import io.scalajs.npm.express.{Application, Request, Response}
 
 import scala.concurrent.ExecutionContext

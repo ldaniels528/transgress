@@ -1,8 +1,10 @@
 package com.github.ldaniels528.bourne.client
 package controllers
 
+import com.github.ldaniels528.bourne.client.services.JobService
 import io.scalajs.dom.html.browser.console
-import io.scalajs.npm.angularjs.{Controller, Scope}
+import io.scalajs.npm.angularjs.toaster.Toaster
+import io.scalajs.npm.angularjs.{Controller, Interval, Scope, injected}
 
 import scala.scalajs.js
 
@@ -10,12 +12,9 @@ import scala.scalajs.js
   * Activity Controller
   * @author lawrence.daniels@gmail.com
   */
-class ActivityController($scope: ActivityScope) extends Controller {
-
-  /////////////////////////////////////////////////////////
-  //    Variables
-  /////////////////////////////////////////////////////////
-
+class ActivityController($scope: ActivityScope, $interval: Interval, toaster: Toaster,
+                         @injected("JobService") jobService: JobService)
+  extends Controller {
 
   /////////////////////////////////////////////////////////
   //    Public Methods
@@ -36,7 +35,6 @@ class ActivityController($scope: ActivityScope) extends Controller {
   */
 @js.native
 trait ActivityScope extends Scope {
-  // variables
 
   // functions
   var init: js.Function0[Unit] = js.native

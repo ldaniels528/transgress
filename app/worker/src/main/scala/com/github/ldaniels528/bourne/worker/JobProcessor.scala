@@ -2,14 +2,13 @@ package com.github.ldaniels528.bourne.worker
 
 import com.github.ldaniels528.bourne.models.JobStates.JobState
 import com.github.ldaniels528.bourne.models.{JobStates, StatisticsLike, WorkflowLike}
-import com.github.ldaniels528.bourne.rest.{Job, LoggerFactory}
-import com.github.ldaniels528.bourne.worker.JobProcessor.{FileWatch, _}
+import com.github.ldaniels528.bourne.rest.{Job, JobClient, LoggerFactory, WorkflowClient}
+import com.github.ldaniels528.bourne.worker.JobProcessor._
 import com.github.ldaniels528.bourne.worker.devices._
 import com.github.ldaniels528.bourne.worker.models.Workflow
 import com.github.ldaniels528.bourne.worker.models.Workflow._
-import com.github.ldaniels528.bourne.worker.rest.{JobClient, WorkflowClient}
 import io.scalajs.JSON
-import io.scalajs.nodejs.fs.{Fs, Stats}
+import io.scalajs.nodejs.fs.Fs
 import io.scalajs.nodejs.path.Path
 import io.scalajs.nodejs.{Error, setTimeout}
 import io.scalajs.npm.glob.{Glob, _}
@@ -22,16 +21,15 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.scalajs.js
-import scala.scalajs.js.annotation.ScalaJSDefined
 import scala.util.{Failure, Success, Try}
 
 /**
   * Job Processor
   * @author lawrence.daniels@gmail.com
   */
-class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowDAO: WorkflowClient, ec: ExecutionContext) {
+class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowDAO: WorkflowClient, ec: ExecutionContext)
+  extends JobFileTracking {
   private val logger = LoggerFactory.getLogger(getClass)
-  private val watching = js.Dictionary[FileWatch]()
   private var active = 0
 
   /**
@@ -51,9 +49,9 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
             _ <- job.changeState(JobStates.QUEUED)
             workflow <- loadWorkflow(job)
             _ <- job.changeState(JobStates.RUNNING)
-            stats <- compileAndRunWorkflow(workflow)(job)
+            statistics <- compileAndRunWorkflow(workflow)(job)
             _ <- job.changeState(JobStates.SUCCESS)
-          } yield stats
+          } yield statistics
 
           outcome onComplete {
             case Success(stats) =>
@@ -70,7 +68,7 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
             active -= 1
 
             // remove the job
-            jobDAO.untrackJob(job)
+            untrackJob(job)
           }
         case None =>
         // No jobs found
@@ -86,7 +84,7 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
       Glob.async(s"${config.incomingDirectory}/$pattern").future onComplete {
         case Success(files) =>
           for {
-            file <- files if !watching.contains(file) && !jobDAO.isTracked(file)
+            file <- files if !isWatchedOrTracked(file)
           } ensureCompleteFile(trigger, file)
         case Failure(e) =>
           logger.error(s"${trigger.name}: Failed while searching for new files: ${e.getMessage}")
@@ -97,11 +95,7 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
   private def ensureCompleteFile(trigger: Trigger, file: String): Unit = {
     Fs.statAsync(file).future onComplete {
       case Success(stats) =>
-        val watched = watching.getOrElseUpdate(file, {
-          logger.info(s"${trigger.name}: Watching '$file' (${stats.mtime})...")
-          new FileWatch(stats)
-        })
-        watched match {
+        watch(file, stats) match {
           case w if w.stats.size != stats.size || w.stats.mtime.getTime() != stats.mtime.getTime() =>
             logger.info(s"${trigger.name}: '$file' has changed (size = ${stats.size - w.stats.size}, mtime = ${stats.mtime - w.stats.mtime})")
             w.stats = stats
@@ -112,7 +106,6 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
           case _ =>
             queueForProcessing(trigger, file)
         }
-
       case Failure(e) =>
         logger.info(s"${trigger.name}: Failed to stat '$file'")
       // TODO retry up to N times?
@@ -124,20 +117,17 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
       name <- trigger.name
       workFile <- config.workFile(incomingFile)
       workflowName <- trigger.workflowName
-      workflowPath <- config.workflow(workflowName)
     } {
-      logger.info(s"$name: Queuing '$incomingFile' (workflow $workflowPath)")
+      logger.info(s"$name: Queuing '$incomingFile' (workflow $workflowName)")
       val outcome = for {
-        job <- jobDAO.createJob(new Job(_id = js.undefined, name = name, input = incomingFile, workflowConfig = workflowPath, state = JobStates.NEW))
-      //_ <- job.changeState(JobStates.QUEUED)
+        job <- jobDAO.createJob(new Job(_id = js.undefined, name = name, input = incomingFile, workflowConfig = workflowName))
       } yield job
 
       outcome onComplete {
         case Success(job) =>
           logger.info(s"$name: Created job ${job._id} (${job.name}) for file '$incomingFile'...")
           job.info(s"File '$workFile' is queued for processing...")
-          jobDAO.trackJob(incomingFile, job)
-          watching.remove(incomingFile)
+          trackJob(incomingFile, job)
         case Failure(e) =>
           logger.error(s"Failed to move '$incomingFile' to '${config.workDirectory}': ${e.getMessage}", e)
         // TODO retry up to N times?
@@ -180,14 +170,19 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
   }
 
   private def loadWorkflow(job: Job)(implicit ec: ExecutionContext): Future[WorkflowLike] = {
-    job.workflowConfig.toOption match {
-      case Some(workflowRef) =>
-        job.info(s"Loaded workflow '$workflowRef' from ${config.master}...")
-        workflowDAO.findByName(workflowRef) flatMap {
+    val results = for {
+      workflowName <- job.workflowConfig
+      workflowPath <- config.workflow(workflowName)
+    } yield (workflowName, workflowPath)
+
+    results.toOption match {
+      case Some((workflowName, workflowPath)) =>
+        job.info(s"Loading workflow '$workflowName' from ${config.master}...")
+        workflowDAO.findByName(workflowName) flatMap {
           case Some(workflow) => Future.successful(workflow)
           case None =>
-            logger.info(s"Loading workflow '$workflowRef'...")
-            Fs.readFileAsync(workflowRef).future map (buf => JSON.parseAs[WorkflowLike](buf.toString()))
+            logger.info(s"Loading workflow file '$workflowPath'...")
+            Fs.readFileAsync(workflowPath).future map (buf => JSON.parseAs[WorkflowLike](buf.toString))
         }
       case None =>
         Future.failed(js.JavaScriptException(s"No workflow specified for job ${job._id.orNull}"))
@@ -268,11 +263,6 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
   */
 object JobProcessor {
   private[this] val logger = LoggerFactory.getLogger(getClass)
-
-  @ScalaJSDefined
-  class FileWatch(var stats: Stats) extends js.Object {
-    def elapsedTime: Double = js.Date.now() - stats.mtime.getTime()
-  }
 
   /**
     * Job Enrichment

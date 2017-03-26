@@ -2,9 +2,15 @@ package com.github.ldaniels528.bourne.client
 package controllers
 
 import com.github.ldaniels528.bourne.client.models.Expandable
-import io.scalajs.npm.angularjs.{Controller, Location, Scope}
+import com.github.ldaniels528.bourne.client.services.JobService
+import io.scalajs.dom.html.browser.console
+import io.scalajs.npm.angularjs._
+import io.scalajs.npm.angularjs.toaster.Toaster
+import io.scalajs.util.DurationHelper._
 import io.scalajs.util.JsUnderOrHelper._
 
+import scala.concurrent.duration._
+import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.scalajs.js
 import scala.scalajs.js.annotation.ScalaJSDefined
 
@@ -12,13 +18,17 @@ import scala.scalajs.js.annotation.ScalaJSDefined
   * Main Controller
   * @author lawrence.daniels@gmail.com
   */
-class MainController($scope: MainScope, $location: Location) extends Controller {
+case class MainController($scope: MainScope, $interval: Interval, $location: Location, toaster: Toaster,
+                          @injected("JobService") jobService: JobService)
+  extends Controller with JobHandling {
 
   /////////////////////////////////////////////////////////
   //    Variables
   /////////////////////////////////////////////////////////
 
   $scope.version = "0.0.1"
+
+  $scope.jobs = js.Array()
 
   $scope.tabs = js.Array(
     new AppTab(name = "Dashboard", uri = "/dashboard", icon = "fa-stack-overflow"),
@@ -28,6 +38,23 @@ class MainController($scope: MainScope, $location: Location) extends Controller 
   )
 
   $scope.tabs(0).active = true
+
+  /////////////////////////////////////////////////////////
+  //    Public Methods
+  /////////////////////////////////////////////////////////
+
+  /**
+    * Initializes the controller
+    */
+  $scope.init = () => {
+    console.info(s"Initializing ${getClass.getSimpleName}...")
+
+    // get the list of jobs now
+    refreshJobs()
+
+    // and update them every 5 seconds
+    $interval(() => refreshJobs(), 5.seconds)
+  }
 
   /////////////////////////////////////////////////////////
   //    Public Methods
@@ -50,7 +77,7 @@ class MainController($scope: MainScope, $location: Location) extends Controller 
   * @author lawrence.daniels@gmail.com
   */
 @js.native
-trait MainScope extends Scope {
+trait MainScope extends JobHandlingScope {
   // variables
   var version: String = js.native
   var tabs: js.Array[AppTab] = js.native
@@ -58,6 +85,7 @@ trait MainScope extends Scope {
   // functions
   var changeTab: js.Function1[js.UndefOr[AppTab], Unit] = js.native
   var collapseExpand: js.Function1[js.UndefOr[Expandable], Unit] = js.native
+  var init: js.Function0[Unit] = js.native
 
 }
 
