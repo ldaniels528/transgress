@@ -1,10 +1,11 @@
 package com.github.ldaniels528.bourne.client
 package controllers
 
-import com.github.ldaniels528.bourne.client.services.JobService
+import com.github.ldaniels528.bourne.client.models.Job
+import com.github.ldaniels528.bourne.models.JobStates
 import io.scalajs.dom.html.browser.console
 import io.scalajs.npm.angularjs.toaster.Toaster
-import io.scalajs.npm.angularjs.{Controller, Interval, Scope, injected}
+import io.scalajs.npm.angularjs.{Controller, Interval, Scope}
 
 import scala.scalajs.js
 
@@ -12,8 +13,7 @@ import scala.scalajs.js
   * Activity Controller
   * @author lawrence.daniels@gmail.com
   */
-class ActivityController($scope: ActivityScope, $interval: Interval, toaster: Toaster,
-                         @injected("JobService") jobService: JobService)
+class ActivityController($scope: ActivityScope, $interval: Interval, toaster: Toaster)
   extends Controller {
 
   /////////////////////////////////////////////////////////
@@ -27,6 +27,8 @@ class ActivityController($scope: ActivityScope, $interval: Interval, toaster: To
     console.info(s"Initializing ${getClass.getSimpleName}...")
   }
 
+  $scope.getRunningJobs = () => $scope.jobs.filter(_.state.contains(JobStates.RUNNING))
+
 }
 
 /**
@@ -34,9 +36,10 @@ class ActivityController($scope: ActivityScope, $interval: Interval, toaster: To
   * @author lawrence.daniels@gmail.com
   */
 @js.native
-trait ActivityScope extends Scope {
+trait ActivityScope extends Scope with JobHandlingScope {
 
   // functions
   var init: js.Function0[Unit] = js.native
+  var getRunningJobs: js.Function0[js.Array[Job]] = js.native
 
 }

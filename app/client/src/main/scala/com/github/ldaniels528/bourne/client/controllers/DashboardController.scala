@@ -2,11 +2,10 @@ package com.github.ldaniels528.bourne.client
 package controllers
 
 import com.github.ldaniels528.bourne.client.models.Job
-import com.github.ldaniels528.bourne.client.services.JobService
 import com.github.ldaniels528.bourne.models.JobStates._
 import io.scalajs.dom.html.browser._
 import io.scalajs.npm.angularjs.toaster.Toaster
-import io.scalajs.npm.angularjs.{Controller, Interval, Scope, injected}
+import io.scalajs.npm.angularjs.{Controller, Interval, Scope}
 import io.scalajs.util.JsUnderOrHelper._
 
 import scala.scalajs.js
@@ -15,8 +14,7 @@ import scala.scalajs.js
   * Dashboard Controller
   * @author lawrence.daniels@gmail.com
   */
-class DashboardController($scope: DashboardScope, $interval: Interval, toaster: Toaster,
-                          @injected("JobService") jobService: JobService)
+class DashboardController($scope: DashboardScope, $interval: Interval, toaster: Toaster)
   extends Controller {
 
   /////////////////////////////////////////////////////////
@@ -67,7 +65,7 @@ class DashboardController($scope: DashboardScope, $interval: Interval, toaster: 
   * @author lawrence.daniels@gmail.com
   */
 @js.native
-trait DashboardScope extends Scope {
+trait DashboardScope extends Scope with JobHandlingScope {
 
   // functions
   var init: js.Function0[Unit] = js.native

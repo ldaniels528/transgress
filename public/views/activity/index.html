@@ -8,7 +8,7 @@
             <th class="stats">% Complete</th>
             <th class="stats">ETC</th>
         </tr>
-        <tr ng-repeat="job in jobs">
+        <tr ng-repeat="job in getRunningJobs()">
             <td class="stats">
                 {{ job.statistics.totalInserted | number }}
                 <span style="color: #00aa00">
