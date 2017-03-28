@@ -12,6 +12,18 @@
     padding-left: 2px;
 }
 
+.pause_button {
+    color: #ffaa00;
+}
+
+.play_button {
+    color: #00bb00;
+}
+
+.stop_button {
+    color: #dd0000;
+}
+
 .status_new {
     color: #aaaaaa;
 }

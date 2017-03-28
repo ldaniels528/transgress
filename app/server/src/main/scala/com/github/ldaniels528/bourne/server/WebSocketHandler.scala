@@ -38,7 +38,7 @@ object WebSocketHandler {
 
   def emit(action: String, data: String): Immediate = {
     setImmediate(() => {
-      logger.log(s"Broadcasting action '$action' with data '$data'...")
+      //logger.log(s"Broadcasting action '$action' with data '$data'...")
       clients.foreach(client => Try(client.send(action, data)) match {
         case Success(_) =>
         case Failure(e) =>

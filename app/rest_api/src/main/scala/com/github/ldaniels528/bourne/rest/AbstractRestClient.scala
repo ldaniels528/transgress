@@ -53,7 +53,7 @@ class AbstractRestClient(endpoint: String) {
 
   protected def getUrl(uri: String): String = {
     val url = s"http://$endpoint/api/$uri"
-    logger.info(s"request: $url")
+    //logger.info(s"request: $url")
     url
   }
 

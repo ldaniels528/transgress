@@ -12,6 +12,7 @@ import io.scalajs.nodejs.fs.Fs
 import io.scalajs.nodejs.path.Path
 import io.scalajs.nodejs.{Error, setImmediate, setTimeout}
 import io.scalajs.npm.glob.{Glob, _}
+import io.scalajs.npm.ip.IP
 import io.scalajs.npm.mkdirp.Mkdirp
 import io.scalajs.util.DateHelper._
 import io.scalajs.util.DurationHelper._
@@ -21,7 +22,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.scalajs.js
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 /**
   * Job Processor
@@ -38,9 +39,8 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
   def run(): Unit = {
     // if no process is active, start one ...
     if (active < config.getMaxConcurrency) {
-      jobDAO.getNextJob() foreach {
+      jobDAO.getNextJob(IP.address()) foreach {
         case Some(job) =>
-          logger.info(s"job => ${JSON.stringify(job)}")
           active += 1
 
           val outcome = for {
@@ -140,10 +140,9 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
     * @return the results of the execution
     */
   private def compileAndRunWorkflow(workflowRaw: WorkflowLike)(implicit job: Job) = {
-    Try(compile(workflowRaw)) match {
-      case Success(Some(workflow)) => runWorkflow(workflow)
-      case Success(None) => Future.failed(js.JavaScriptException(s"Failed to compile for ${job._id} (${job.name})"))
-      case Failure(e) => Future.failed(e)
+    compile(workflowRaw) match {
+      case Some(workflow) => runWorkflow(workflow)
+      case None => Future.failed(js.JavaScriptException(s"Failed to compile for ${job._id} (${job.name})"))
     }
   }
 
@@ -152,7 +151,7 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
     * @param workflowRaw the unverified workflow
     * @return the fully verified workflow
     */
-  private def compile(workflowRaw: WorkflowLike)(implicit job: Job) = {
+  private def compile(workflowRaw: WorkflowLike)(implicit job: Job): Option[Workflow] = {
     workflowRaw.validate match {
       case Success(workflow) =>
         val input = job.input.orDie(s"No input source defined for job #${job._id.orNull}")
@@ -193,7 +192,7 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
     * @param workflow the given work job
     * @return a promise of the [[Statistics statistics]]
     */
-  private def runWorkflow(workflow: Workflow)(implicit job: Job) = {
+  private def runWorkflow(workflow: Workflow)(implicit job: Job): Future[Statistics] = {
     val args = for {
       inputDevice <- DeviceFactory.getInputDevice(workflow.input)
       outputDevices = workflow.outputs.flatMap { source =>
@@ -215,7 +214,7 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
     * @param outputDevices the given [[OutputDevice output devices]]
     * @return a promise of the [[Statistics statistics]]
     */
-  private def runETL(inputDevice: InputDevice, outputDevices: Seq[OutputDevice])(implicit job: Job) = {
+  private def runETL(inputDevice: InputDevice, outputDevices: Seq[OutputDevice])(implicit job: Job): Future[Statistics] = {
     // create a new the statistics generator instance
     implicit val statsGen = new StatisticsGenerator()
 
@@ -251,6 +250,7 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
     }
 
     // start reading from the input device
+    startJob(job, inputDevice)
     inputDevice.start(onData, onError, onFinish)
   }
 

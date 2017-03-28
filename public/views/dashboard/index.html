@@ -35,11 +35,11 @@
             <table class="col-md-12">
                 <tr>
                     <th>Workflow</th>
-                    <td>{{ selectedJob.name }}</td>
+                    <td>{{ selectedJob.workflowName }}</td>
                 </tr>
                 <tr>
                     <th>File</th>
-                    <td>{{ selectedJob.input }}</td>
+                    <td>{{ selectedJob.name }}</td>
                 </tr>
                 <tr>
                     <th>File Size</th>
@@ -74,7 +74,7 @@
                     <th>Bytes/sec</th>
                     <td>{{ selectedJob.statistics.bytesPerSecond | bps }}</td>
                 </tr>
-                <tr ng-show="isRunning(selectedJob)">
+                <tr>
                     <th>Estimated Completion</th>
                     <td>
                         <span ng-show="selectedJob.statistics.completionTime">{{ selectedJob.statistics.completionTime | duration }}</span>
@@ -90,8 +90,21 @@
                     <td>{{ selectedJob.lastUpdated | date:'MM/dd/yyyy hh:mm:ss' }}</td>
                 </tr>
                 <tr>
-                    <td colspan="2" ng-click="selectJob(null)" class="clickable">
+                    <td ng-click="selectJob(null)" class="clickable">
                         <i class="fa fa-arrow-left bold" style="color: #00cc00"> Back</i>
+                    </td>
+                    <td>
+                        <i ng-show="isResumable(selectedJob) && !resuming" ng-click="resumeJob(selectedJob)" title="Resume job" class="fa fa-2x fa-play-circle play_button clickable"></i>
+                        <i ng-show="!isResumable(selectedJob) && !resuming" class="fa fa-2x fa-play-circle null"></i>
+                        <img ng-show="resuming" src="/images/statuses/loading24.gif" style="vertical-align: top">
+
+                        <i ng-show="isPausable(selectedJob) && !pausing" ng-click="pauseJob(selectedJob)" title="Pause job" class="fa fa-2x fa-pause-circle pause_button clickable"></i>
+                        <i ng-show="!isPausable(selectedJob) && !pausing" class="fa fa-2x fa-pause-circle null"></i>
+                        <img ng-show="pausing" src="/images/statuses/loading24.gif" style="vertical-align: top">
+
+                        <i ng-show="isStoppable(selectedJob) && !stopping" ng-click="stopJob(selectedJob)" title="Stop job" class="fa fa-2x fa-stop-circle stop_button clickable"></i>
+                        <i ng-show="!isStoppable(selectedJob) && !stopping" class="fa fa-2x fa-stop-circle null"></i>
+                        <img ng-show="stopping" src="/images/statuses/loading24.gif" style="vertical-align: top">
                     </td>
                 </tr>
             </table>

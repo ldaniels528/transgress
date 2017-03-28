@@ -16,7 +16,6 @@ import io.scalajs.npm.csvtojson.ConverterOptions
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.language.{existentials, reflectiveCalls}
 import scala.scalajs.js
-import scala.util.{Failure, Success, Try}
 
 /**
   * Text File Input Device
@@ -28,6 +27,10 @@ class TextFileInputDevice(val source: Source, val stream: ReadStream)(implicit e
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def close(): Future[Unit] = stream.closeAsync.future
+
+  override def pause(): Future[Boolean] = Future.successful(stream.pause().isPaused())
+
+  override def resume(): Future[Boolean] = Future.successful(!stream.resume().isPaused())
 
   override def start(onData: js.Any => Any,
                      onError: Error => Any,
@@ -42,11 +45,11 @@ class TextFileInputDevice(val source: Source, val stream: ReadStream)(implicit e
     }
 
     // update the bytes read on each data event
-    stream.onData[Any] {
+    stream.on("data", (data: Any) => data match {
       case v: Buffer => statsGen.bytesRead += v.length
       case v: String => statsGen.bytesRead += v.length
       case _ =>
-    }
+    })
 
     // handle the input based on its format
     source.format match {
@@ -60,6 +63,8 @@ class TextFileInputDevice(val source: Source, val stream: ReadStream)(implicit e
     }
     promise.future
   }
+
+  override def stop(): Future[Boolean] = stream.closeAsync.future.map(_ => true)
 
   /**
     * Setups event-driven delimited text format processing
@@ -100,11 +105,8 @@ class TextFileInputDevice(val source: Source, val stream: ReadStream)(implicit e
                                   onFinish: js.Any => Any)(implicit statsGen: StatisticsGenerator) = {
     Readline.createInterface(new ReadlineOptions(input = stream))
       .on("error", (error: Error) => onError(error))
-      .on("line", (line: String) => {
-        Try(converter(line)) match {
-          case Success(jsObject) => onData(jsObject)
-          case Failure(e) => onError(new Error(e.getMessage))
-        }
+      .on("line", (line: String) => try onData(converter(line)) catch {
+        case e: Throwable => onError(new Error(e.getMessage))
       })
       .on("close", () => {
         onFinish(OS.EOL)

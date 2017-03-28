@@ -2,7 +2,6 @@ package com.github.ldaniels528.bourne.rest
 
 import com.github.ldaniels528.bourne.models.JobStates.JobState
 import com.github.ldaniels528.bourne.models.{StatisticsLike, StatusMessage}
-import io.scalajs.nodejs.os.OS
 import io.scalajs.npm.request.RequestOptions
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -22,12 +21,16 @@ class JobClient(endpoint: String) extends AbstractRestClient(endpoint) {
     post[Job](new RequestOptions(uri = getUrl("jobs"), json = job))
   }
 
+  def getJobByID(id: String)(implicit ec: ExecutionContext): Future[Option[Job]] = {
+    get[js.Array[Job]](s"job/$id").map(_.headOption)
+  }
+
   def getJobs(implicit ec: ExecutionContext): Future[js.Array[Job]] = {
     get[js.Array[Job]]("jobs")
   }
 
-  def getNextJob()(implicit ec: ExecutionContext): Future[Option[Job]] = {
-    patch[js.Array[Job]](s"jobs/checkout/${OS.hostname()}") map (_.headOption)
+  def getNextJob(host: String)(implicit ec: ExecutionContext): Future[Option[Job]] = {
+    patch[js.Array[Job]](s"jobs/checkout/$host") map (_.headOption)
   }
 
   def updateJob(job: Job)(implicit ec: ExecutionContext): Future[Job] = {

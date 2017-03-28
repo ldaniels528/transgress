@@ -1,6 +1,7 @@
 package com.github.ldaniels528.bourne
 package dao
 
+import com.github.ldaniels528.bourne.models.JobStates.JobState
 import com.github.ldaniels528.bourne.models.{JobLike, StatisticsLike}
 import io.scalajs.npm.mongodb.ObjectID
 
@@ -17,7 +18,7 @@ trait JobData extends JobLike {
   var input: js.UndefOr[String] = js.native
   var inputSize: js.UndefOr[Double] = js.native
   var workflowName: js.UndefOr[String] = js.native
-  var state: js.UndefOr[String] = js.native
+  var state: js.UndefOr[JobState] = js.native
   var lastUpdated: js.UndefOr[Double] = js.native
   var message: js.UndefOr[String] = js.native
   var processingHost: js.UndefOr[String] = js.native

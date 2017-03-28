@@ -58,8 +58,8 @@ case class MainController($scope: MainScope, $interval: Interval, $location: Loc
     // get the list of jobs now
     refreshJobs()
 
-    // and update them every 5 minutes
-    $interval(() => refreshJobs(), 5.minute)
+    // and update them every 3 minutes
+    $interval(() => refreshJobs(), 3.minute)
   }
 
   /////////////////////////////////////////////////////////

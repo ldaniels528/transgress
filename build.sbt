@@ -191,6 +191,7 @@ lazy val worker = (project in file("./app/worker"))
       "io.scalajs.npm" %%% "express" % scalaJsIoVersion,
       "io.scalajs.npm" %%% "glob" % scalaJsIoVersion,
       "io.scalajs.npm" %%% "gzip-uncompressed-size" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "ip" % scalaJsIoVersion,
       "io.scalajs.npm" %%% "mkdirp" % scalaJsIoVersion,
       "io.scalajs.npm" %%% "moment" % scalaJsIoVersion,
       "io.scalajs.npm" %%% "moment-duration-format" % scalaJsIoVersion,

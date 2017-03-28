@@ -87,7 +87,7 @@ object Worker extends js.JSApp {
     * @param jobProcessor the [[JobProcessor job processor]]
     * @return the [[Application application]]
     */
-  private def configureApplication(jobProcessor: JobProcessor): Application = {
+  private def configureApplication(jobProcessor: JobProcessor)(implicit jobClient: JobClient): Application = {
     logger.info("Loading Express modules...")
     implicit val app = Express()
 
@@ -112,7 +112,7 @@ object Worker extends js.JSApp {
 
     // setup all other routes
     logger.info("Setting up the worker routes...")
-    new WorkerRoutes(app)
+    new WorkerRoutes(app, jobProcessor)
     app
   }
 

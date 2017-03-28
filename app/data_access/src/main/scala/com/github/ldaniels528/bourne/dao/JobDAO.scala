@@ -4,8 +4,8 @@ import com.github.ldaniels528.bourne.models.JobStates.JobState
 import com.github.ldaniels528.bourne.models.{JobStates, StatisticsLike}
 import io.scalajs.npm.mongodb._
 
+import scala.concurrent.{ExecutionContext, Future}
 import scala.scalajs.js
-import scala.scalajs.js.Promise
 
 /**
   * Job DAO
@@ -26,7 +26,8 @@ object JobDAO {
     */
   final implicit class JobDAOEnrichment(val dao: JobDAO) extends AnyVal {
 
-    def checkoutJob(host: String): Promise[FindAndModifyWriteOpResult] = {
+    @inline
+    def checkoutJob(host: String): js.Promise[FindAndModifyWriteOpResult] = {
       dao.findOneAndUpdate(
         filter = doc("state" $eq JobStates.NEW),
         update = doc($set("state" -> JobStates.QUEUED, "processingHost" -> host)),
@@ -48,6 +49,11 @@ object JobDAO {
         update = doc($set("state" -> state, "message" -> message, "lastUpdated" -> js.Date.now())),
         options = new FindAndUpdateOptions(returnOriginal = false)
       )
+    }
+
+    @inline
+    def findByID(id: String)(implicit ec: ExecutionContext): Future[Option[JobData]] = {
+      dao.findOneAsync[JobData](doc("_id" $eq new ObjectID(id)))
     }
 
     @inline

@@ -13,10 +13,37 @@ import scala.scalajs.js
   * Job Service
   * @author lawrence.daniels@gmail.com
   */
-case class JobService($http: Http) extends Service {
+class JobService($http: Http) extends Service {
 
+  /**
+    * Retrieves jobs by state
+    * @param states the given [[JobState states]]
+    * @param ec     the [[ExecutionContext]]
+    * @return the resultant array of [[Job]]s
+    */
   def getJobs(states: JobState*)(implicit ec: ExecutionContext): js.Promise[HttpResponse[js.Array[Job]]] = {
-    $http.get(if(states.nonEmpty) s"/api/jobs?states=${states.mkString("|")}" else "/api/jobs")
+    $http.get(if (states.nonEmpty) s"/api/jobs?states=${states.mkString("|")}" else "/api/jobs")
   }
+
+  /**
+    * Pauses the given job
+    * @param jobId the given job ID
+    * @return the [[Job updated job]]
+    */
+  def pauseJob(jobId: String): js.Promise[HttpResponse[Job]] = $http.get[Job](s"/api/job/$jobId/pause")
+
+  /**
+    * Resumes the given job
+    * @param jobId the given job ID
+    * @return the [[Job updated job]]
+    */
+  def resumeJob(jobId: String): js.Promise[HttpResponse[Job]] = $http.get[Job](s"/api/job/$jobId/resume")
+
+  /**
+    * Stops the given job
+    * @param jobId the given job ID
+    * @return the [[Job updated job]]
+    */
+  def stopJob(jobId: String): js.Promise[HttpResponse[Job]] = $http.get[Job](s"/api/job/$jobId/stop")
 
 }
