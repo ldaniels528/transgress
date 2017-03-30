@@ -57,3 +57,7 @@ bourne-server-fastopt.js
 bourne-server-fastopt.js.map
 bourne-worker-fastopt.js
 bourne-worker-fastopt.js.map
+public/javascripts/broadway-web-client-fastopt.js
+public/javascripts/broadway-web-client-fastopt.js.map
+public/javascripts/broadway-web-client-launcher.js
+bower_components/

@@ -127,6 +127,7 @@ lazy val cli = (project in file("./app/cli"))
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
       "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "glob" % scalaJsIoVersion,
       "io.scalajs.npm" %%% "request" % scalaJsIoVersion
     ))
 
@@ -214,7 +215,7 @@ lazy val bourne_js = (project in file("."))
     compile in Compile <<=
       (compile in Compile) dependsOn (fastOptJS in(client, Compile)),
     ivyScala := ivyScala.value map (_.copy(overrideScalaVersion = true)),
-    Seq(packageScalaJSLauncher, fastOptJS, fullOptJS) map { packageJSKey =>
+    Seq(scalaJSUseMainModuleInitializer, fastOptJS, fullOptJS) map { packageJSKey =>
       crossTarget in(client, Compile, packageJSKey) := baseDirectory.value / "public" / "javascripts"
     })
 
