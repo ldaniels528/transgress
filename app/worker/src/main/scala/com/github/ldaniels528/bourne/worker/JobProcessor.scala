@@ -218,40 +218,48 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
     // create a new the statistics generator instance
     implicit val statsGen = new StatisticsGenerator()
 
-    def onData(data: js.Any) {
-      // update the statistics
-      statsGen.totalRead += 1
-      statsGen.update() foreach { statistics =>
-        job.info(statistics.toString)
-        job.statistics = statistics.toModel
-        for {
-          _id <- job._id
-          statistics <- job.statistics
-        } jobDAO.updateStatistics(_id, statistics)
+    // create and register the event handler
+    // then start reading from the input device
+    inputDevice.start(registerEventHandler(job, new JobEventHandler {
+
+      override def onData(data: js.Any): Unit = {
+        // update the statistics
+        statsGen.totalRead += 1
+        statsGen.update() foreach { statistics =>
+          job.info(statistics.toString)
+          job.statistics = statistics.toModel
+          for {
+            _id <- job._id
+            statistics <- job.statistics
+          } jobDAO.updateStatistics(_id, statistics)
+        }
+
+        // write the data to all output devices
+        outputDevices foreach (_.write(data))
       }
 
-      // write the data to all output devices
-      outputDevices foreach (_.write(data))
-    }
+      override def onError(err: Error): Unit = {
+        statsGen.failures += 1
+        job.error(err.message, err)
+      }
 
-    def onError(err: Error) {
-      statsGen.failures += 1
-      job.error(err.message, err)
-    }
+      override def onFinish(data: js.Any): Future[Unit] = {
+        job.info(s"Closing all devices...")
+        for {
+          _ <- jobDAO.updateJob(job)
+          _ <- Future.sequence(outputDevices.map(_.flush())).map(_.sum)
+          _ <- inputDevice.close()
+          _ <- Future.sequence(outputDevices.map(_.close()))
+        } yield ()
+      }
 
-    def onFinish(data: js.Any): Future[Unit] = {
-      job.info(s"Closing all devices...")
-      for {
-        _ <- jobDAO.updateJob(job)
-        _ <- Future.sequence(outputDevices.map(_.flush())).map(_.sum)
-        _ <- inputDevice.close()
-        _ <- Future.sequence(outputDevices.map(_.close()))
-      } yield ()
-    }
+      override def pause(): Future[Boolean] = inputDevice.pause()
 
-    // start reading from the input device
-    startJob(job, inputDevice)
-    inputDevice.start(onData, onError, onFinish)
+      override def resume(): Future[Boolean] = inputDevice.resume()
+
+      override def stop(): Future[Boolean] = inputDevice.stop()
+
+    }))
   }
 
 }

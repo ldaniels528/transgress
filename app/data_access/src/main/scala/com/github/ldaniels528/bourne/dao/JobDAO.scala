@@ -30,7 +30,7 @@ object JobDAO {
     def checkoutJob(host: String): js.Promise[FindAndModifyWriteOpResult] = {
       dao.findOneAndUpdate(
         filter = doc("state" $eq JobStates.NEW),
-        update = doc($set("state" -> JobStates.QUEUED, "processingHost" -> host)),
+        update = doc($set("state" -> JobStates.CLAIMED, "processingHost" -> host)),
         options = new FindAndUpdateOptions(sort = doc("priority" -> 1), returnOriginal = false)
       )
     }

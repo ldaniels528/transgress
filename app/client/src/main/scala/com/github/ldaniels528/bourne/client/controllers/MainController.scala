@@ -81,6 +81,7 @@ case class MainController($scope: MainScope, $interval: Interval, $location: Loc
   $scope.getStatusBulb = (aJob: js.UndefOr[Job]) => aJob flatMap { job =>
     job.state flatMap {
       case NEW => "images/statuses/offlight.png"
+      case CLAIMED => "images/statuses/bluelight.png"
       case PAUSED => "images/statuses/yellowlight.gif"
       case QUEUED => "images/statuses/bluelight.png"
       case RUNNING => "images/statuses/loading16.gif"
@@ -96,6 +97,7 @@ case class MainController($scope: MainScope, $interval: Interval, $location: Loc
   $scope.getStatusClass = (aJob: js.UndefOr[Job]) => aJob flatMap { job =>
     job.state flatMap {
       case NEW => "status_new"
+      case CLAIMED => "status_claimed"
       case PAUSED => "status_paused"
       case QUEUED => "status_queued"
       case RUNNING => "status_running"

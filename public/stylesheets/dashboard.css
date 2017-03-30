@@ -24,6 +24,10 @@
     color: #dd0000;
 }
 
+.status_claimed {
+    color: #4466ff;
+}
+
 .status_new {
     color: #aaaaaa;
 }

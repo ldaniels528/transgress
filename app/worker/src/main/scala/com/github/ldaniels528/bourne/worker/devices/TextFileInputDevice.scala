@@ -3,7 +3,7 @@ package com.github.ldaniels528.bourne.worker.devices
 import com.github.ldaniels528.bourne.rest.LoggerFactory
 import com.github.ldaniels528.bourne.worker.models.Source
 import com.github.ldaniels528.bourne.worker.util.LoaderUtilities._
-import com.github.ldaniels528.bourne.worker.{Statistics, StatisticsGenerator}
+import com.github.ldaniels528.bourne.worker.{JobEventHandler, Statistics, StatisticsGenerator}
 import io.scalajs.JSON
 import io.scalajs.nodejs.Error
 import io.scalajs.nodejs.buffer.Buffer
@@ -32,9 +32,7 @@ class TextFileInputDevice(val source: Source, val stream: ReadStream)(implicit e
 
   override def resume(): Future[Boolean] = Future.successful(!stream.resume().isPaused())
 
-  override def start(onData: js.Any => Any,
-                     onError: Error => Any,
-                     onFinish: js.Any => Any)(implicit statsGen: StatisticsGenerator): Future[Statistics] = {
+  override def start(handler: JobEventHandler)(implicit statsGen: StatisticsGenerator): Future[Statistics] = {
     logger.info(s"Starting to read from '${source.name}' (${source.path})...")
     val promise = Promise[Statistics]()
 
@@ -53,11 +51,11 @@ class TextFileInputDevice(val source: Source, val stream: ReadStream)(implicit e
 
     // handle the input based on its format
     source.format match {
-      case "csv" => setupDelimitedTextProcessing(",", promise, onData, onError, onFinish)
-      case "fixed" => setupLineProcessing(fromFixed, promise, onData, onError, onFinish)
-      case "json" => setupLineProcessing(fromJSON, promise, onData, onError, onFinish)
-      case "psv" => setupDelimitedTextProcessing("|", promise, onData, onError, onFinish)
-      case "tsv" => setupDelimitedTextProcessing("\t", promise, onData, onError, onFinish)
+      case "csv" => setupDelimitedTextProcessing(",", promise, handler.onData, handler.onError, handler.onFinish)
+      case "fixed" => setupLineProcessing(fromFixed, promise, handler.onData, handler.onError, handler.onFinish)
+      case "json" => setupLineProcessing(fromJSON, promise, handler.onData, handler.onError, handler.onFinish)
+      case "psv" => setupDelimitedTextProcessing("|", promise, handler.onData, handler.onError, handler.onFinish)
+      case "tsv" => setupDelimitedTextProcessing("\t", promise, handler.onData, handler.onError, handler.onFinish)
       case format =>
         promise.failure(js.JavaScriptException(s"Unhandled input format '$format'"))
     }

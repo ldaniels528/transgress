@@ -2,7 +2,6 @@ package com.github.ldaniels528.bourne.worker
 
 import com.github.ldaniels528.bourne.rest.Job
 import com.github.ldaniels528.bourne.worker.JobFileTracking.FileWatch
-import com.github.ldaniels528.bourne.worker.devices.InputDevice
 import io.scalajs.nodejs.fs.Stats
 import io.scalajs.util.JsUnderOrHelper._
 
@@ -17,7 +16,7 @@ import scala.scalajs.js.annotation.ScalaJSDefined
   */
 trait JobFileTracking {
   private val jobs = js.Dictionary[Job]()
-  private val devices = js.Dictionary[InputDevice]()
+  private val eventHandlers = js.Dictionary[JobEventHandler]()
   private val watching = js.Dictionary[FileWatch]()
 
   def isTracked(file: String): Boolean = jobs.contains(file)
@@ -28,43 +27,44 @@ trait JobFileTracking {
 
   def lookupJob(file: String): Option[Job] = jobs.get(file)
 
-  def startJob(job: Job, inputDevice: InputDevice): Unit = {
-    devices(job._id.orNull) = inputDevice
+  def registerEventHandler(job: Job, handler: JobEventHandler): JobEventHandler = {
+    eventHandlers(job._id.orNull) = handler
+    handler
   }
 
   def pauseJob(job: Job): Future[Boolean] = {
     val result = for {
       _id <- job._id.toOption
-      device <- devices.get(_id)
-    } yield device
+      handler <- eventHandlers.get(_id)
+    } yield handler
 
     result match {
-      case Some(device) => device.pause()
-      case None => Future.failed(js.JavaScriptException(s"No device found for job ${job._id}"))
+      case Some(handler) => handler.pause()
+      case None => Future.failed(js.JavaScriptException(s"No handler found for job ${job._id}"))
     }
   }
 
   def resumeJob(job: Job): Future[Boolean] = {
     val result = for {
       _id <- job._id.toOption
-      device <- devices.get(_id)
-    } yield device
+      handler <- eventHandlers.get(_id)
+    } yield handler
 
     result match {
-      case Some(device) => device.resume()
-      case None => Future.failed(js.JavaScriptException(s"No device found for job ${job._id}"))
+      case Some(handler) => handler.resume()
+      case None => Future.failed(js.JavaScriptException(s"No handler found for job ${job._id}"))
     }
   }
 
   def stopJob(job: Job): Future[Boolean] = {
     val result = for {
       _id <- job._id.toOption
-      device <- devices.get(_id)
-    } yield device
+      handler <- eventHandlers.get(_id)
+    } yield handler
 
     result match {
-      case Some(device) => device.stop()
-      case None => Future.failed(js.JavaScriptException(s"No device found for job ${job._id}"))
+      case Some(handler) => handler.stop()
+      case None => Future.failed(js.JavaScriptException(s"No handler found for job ${job._id}"))
     }
   }
 
@@ -75,7 +75,7 @@ trait JobFileTracking {
 
   def untrackJob(job: Job): Unit = {
     job._id.foreach { id =>
-      devices.remove(id)
+      eventHandlers.remove(id)
       jobs.find(_._2._id.contains(id)).foreach(t => jobs.remove(t._1))
     }
   }

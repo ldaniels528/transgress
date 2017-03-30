@@ -40,6 +40,7 @@ object JobStates {
   type JobState = String
 
   val NEW: JobState = "NEW"
+  val CLAIMED: JobState = "CLAIMED"
   val QUEUED: JobState = "QUEUED"
   val RUNNING: JobState = "RUNNING"
   val PAUSED: JobState = "PAUSED"

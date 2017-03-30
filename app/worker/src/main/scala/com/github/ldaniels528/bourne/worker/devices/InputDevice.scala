@@ -1,10 +1,8 @@
 package com.github.ldaniels528.bourne.worker.devices
 
-import com.github.ldaniels528.bourne.worker.{Statistics, StatisticsGenerator}
-import io.scalajs.nodejs.Error
+import com.github.ldaniels528.bourne.worker.{JobEventHandler, Statistics, StatisticsGenerator}
 
 import scala.concurrent.Future
-import scala.scalajs.js
 
 /**
   * Represents a generic input device
@@ -32,15 +30,10 @@ trait InputDevice {
 
   /**
     * Starts the processing
-    * @param onData the callback that is executed upon receipt of data
-    * @param onError the callback that is executed when an error occurs
-    * @param onFinish the callback that is executed when all data has been consumed
-    * @param statsGen the [[StatisticsGenerator statistics generator]]
+    * @param handler the given [[JobEventHandler job event handler]]
     * @return a promise of the final [[Statistics statistics]]
     */
-  def start(onData: js.Any => Any,
-            onError: Error => Any,
-            onFinish: js.Any => Any)(implicit statsGen: StatisticsGenerator): Future[Statistics]
+  def start(handler: JobEventHandler)(implicit statsGen: StatisticsGenerator): Future[Statistics]
 
   /**
     * Stops the input device
