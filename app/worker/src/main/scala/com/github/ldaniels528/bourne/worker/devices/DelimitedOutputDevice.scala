@@ -1,7 +1,9 @@
 package com.github.ldaniels528.bourne.worker.devices
 
+import com.github.ldaniels528.bourne.worker.JobEventHandler
 import io.scalajs.nodejs.fs.WriteStream
 import io.scalajs.nodejs.os.OS
+import io.scalajs.util.ScalaJsHelper.isDefined
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.scalajs.js
@@ -17,26 +19,26 @@ class DelimitedOutputDevice(out: WriteStream, delimiter: String, columnHeaders: 
 
   override def close(): Future[Unit] = out.closeAsync.future
 
-  override def flush(): Future[Int] = Future.successful(0)
+  override def flush()(implicit jobEventHandler: JobEventHandler): Future[Int] = Future.successful(0)
 
-  override def write(data: js.Any): Future[Int] = writeAsCSV(data)
-
-  private def writeAsCSV(data: js.Any) = {
+  override def write(data: js.Any)(implicit jobEventHandler: JobEventHandler): Unit = {
     val dict = data.asInstanceOf[js.Dictionary[js.Any]]
     if (columnHeaders && headers.isEmpty) {
       headers = dict.keySet.toSeq
-      for {
-        _ <- persistLine(headers.map(s => '"' + s + '"').mkString(delimiter))
-        _ <- persistLine(toValuesString(dict))
-      } yield 1
+      persistLine(
+        headers.map(s => '"' + s + '"').mkString(delimiter),
+        toValuesString(dict))
     }
-    else {
-      persistLine(toValuesString(dict))
-    }
+    else persistLine(toValuesString(dict))
   }
 
-  private def persistLine(line: String) = {
-    out.writeAsync(line + OS.EOL).future.map(_ => 1)
+  private def persistLine(lines: String*)(implicit jobEventHandler: JobEventHandler) {
+    out.write(lines.mkString(OS.EOL), error => {
+      if (isDefined(error)) jobEventHandler.onError(error)
+      else {
+        // TODO write statistics?
+      }
+    })
   }
 
   private def toValuesString(dict: js.Dictionary[js.Any]) = {

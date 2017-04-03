@@ -1,6 +1,6 @@
 package com.github.ldaniels528.bourne.worker
 
-import com.github.ldaniels528.bourne.rest.LoggerFactory
+import com.github.ldaniels528.bourne.LoggerFactory
 import io.scalajs.nodejs.process
 import io.scalajs.npm.moment.Moment
 

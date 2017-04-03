@@ -14,9 +14,9 @@
             ng-class="selectedJob == job ? 'highlight' : ''"
             class="clickable">
             <td class="stats">
-                <img ng-src="{{ getStatusBulb(job) }}"> {{ job.name }}
+                <img ng-src="{{ getJobStatusBulb(job) }}"> {{ job.name }}
             </td>
-            <td class="stats" ng-class="getStatusClass(job)">{{ job.state }}</td>
+            <td class="stats" ng-class="getJobStatusClass(job)">{{ job.state }}</td>
             <td class="stats">
                 <span ng-show="job.statistics">
                     {{ job.statistics.totalInserted | number }}

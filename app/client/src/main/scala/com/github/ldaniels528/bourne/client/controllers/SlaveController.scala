@@ -12,11 +12,6 @@ import scala.scalajs.js
 class SlaveController($scope: SlaveScope) extends Controller {
 
   /////////////////////////////////////////////////////////
-  //    Variables
-  /////////////////////////////////////////////////////////
-
-
-  /////////////////////////////////////////////////////////
   //    Public Methods
   /////////////////////////////////////////////////////////
 
@@ -35,9 +30,7 @@ class SlaveController($scope: SlaveScope) extends Controller {
   * @author lawrence.daniels@gmail.com
   */
 @js.native
-trait SlaveScope extends Scope {
-  // variables
-
+trait SlaveScope extends Scope with SlaveHandlingScope {
   // functions
   var init: js.Function0[Unit] = js.native
 

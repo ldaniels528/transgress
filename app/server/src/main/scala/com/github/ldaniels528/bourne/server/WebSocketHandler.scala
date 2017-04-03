@@ -3,7 +3,7 @@ package com.github.ldaniels528.bourne.server
 import java.util.UUID
 
 import com.github.ldaniels528.bourne.RemoteEvent
-import com.github.ldaniels528.bourne.rest.LoggerFactory
+import com.github.ldaniels528.bourne.LoggerFactory
 import io.scalajs.nodejs._
 import io.scalajs.nodejs.timers.Immediate
 import io.scalajs.npm.express.Request

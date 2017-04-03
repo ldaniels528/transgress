@@ -16,5 +16,6 @@ class RemoteEvent(val action: js.UndefOr[String], val data: js.UndefOr[String]) 
   */
 object RemoteEvent {
   val JOB_UPDATE = "JOB_UPDATE"
+  val SLAVE_UPDATE = "SLAVE_UPDATE"
 
 }

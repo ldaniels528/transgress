@@ -1,6 +1,6 @@
 package com.github.ldaniels528.bourne.worker.devices
 
-import com.github.ldaniels528.bourne.rest.LoggerFactory
+import com.github.ldaniels528.bourne.LoggerFactory
 import com.github.ldaniels528.bourne.worker.models.Source
 import com.github.ldaniels528.bourne.worker.util.LoaderUtilities._
 import com.github.ldaniels528.bourne.worker.{JobEventHandler, Statistics, StatisticsGenerator}
@@ -51,11 +51,11 @@ class TextFileInputDevice(val source: Source, val stream: ReadStream)(implicit e
 
     // handle the input based on its format
     source.format match {
-      case "csv" => setupDelimitedTextProcessing(",", promise, handler.onData, handler.onError, handler.onFinish)
-      case "fixed" => setupLineProcessing(fromFixed, promise, handler.onData, handler.onError, handler.onFinish)
-      case "json" => setupLineProcessing(fromJSON, promise, handler.onData, handler.onError, handler.onFinish)
-      case "psv" => setupDelimitedTextProcessing("|", promise, handler.onData, handler.onError, handler.onFinish)
-      case "tsv" => setupDelimitedTextProcessing("\t", promise, handler.onData, handler.onError, handler.onFinish)
+      case "csv" => setupDelimitedTextProcessing(",", promise, handler)
+      case "fixed" => setupLineProcessing(fromFixed, promise, handler)
+      case "json" => setupLineProcessing(fromJSON, promise, handler)
+      case "psv" => setupDelimitedTextProcessing("|", promise, handler)
+      case "tsv" => setupDelimitedTextProcessing("\t", promise, handler)
       case format =>
         promise.failure(js.JavaScriptException(s"Unhandled input format '$format'"))
     }
@@ -68,22 +68,19 @@ class TextFileInputDevice(val source: Source, val stream: ReadStream)(implicit e
     * Setups event-driven delimited text format processing
     * @param delimiter the field delimiter (e.g. "|")
     * @param promise   the completion [[Promise promise]]
-    * @param onData    the data event handler
-    * @param onFinish  the completion event handler
+    * @param handler   the job event handler
     */
   private def setupDelimitedTextProcessing(delimiter: String,
                                            promise: Promise[Statistics],
-                                           onData: js.Any => Any,
-                                           onError: Error => Any,
-                                           onFinish: js.Any => Any)(implicit statsGen: StatisticsGenerator) = {
+                                           handler: JobEventHandler)(implicit statsGen: StatisticsGenerator) = {
     val converter = new csvtojson.Converter(new ConverterOptions(
       constructResult = false,
       delimiter = delimiter
-    )).onError(error => onError(error))
-      .on("record_parsed", (data: js.Any) => onData(data))
+    )).onError(error => handler.onError(error))
+      .on("record_parsed", (data: js.Any) => handler.onData(data))
       .on("end_parsed", (data: js.Any) => {
-        onFinish(data)
-        statsGen.update(force = true) foreach (stats => promise.success(stats))
+        handler.onFinish(data)
+        promise.success(statsGen.update())
       })
 
     stream.pipe(converter)
@@ -92,23 +89,20 @@ class TextFileInputDevice(val source: Source, val stream: ReadStream)(implicit e
 
   /**
     * Setups event-driven text line processing
-    * @param promise  the completion [[Promise promise]]
-    * @param onData   the data event handler
-    * @param onFinish the completion event handler
+    * @param promise the completion [[Promise promise]]
+    * @param handler the job event handler
     */
   private def setupLineProcessing(converter: String => js.Any,
                                   promise: Promise[Statistics],
-                                  onData: js.Any => Any,
-                                  onError: Error => Any,
-                                  onFinish: js.Any => Any)(implicit statsGen: StatisticsGenerator) = {
+                                  handler: JobEventHandler)(implicit statsGen: StatisticsGenerator) = {
     Readline.createInterface(new ReadlineOptions(input = stream))
-      .on("error", (error: Error) => onError(error))
-      .on("line", (line: String) => try onData(converter(line)) catch {
-        case e: Throwable => onError(new Error(e.getMessage))
+      .on("error", (error: Error) => handler.onError(error))
+      .on("line", (line: String) => try handler.onData(converter(line)) catch {
+        case e: Throwable => handler.onError(new Error(e.getMessage))
       })
       .on("close", () => {
-        onFinish(OS.EOL)
-        statsGen.update(force = true) foreach (stats => promise.success(stats))
+        handler.onFinish(OS.EOL)
+        promise.success(statsGen.update())
       })
   }
 

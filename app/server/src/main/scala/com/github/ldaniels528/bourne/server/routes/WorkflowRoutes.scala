@@ -1,10 +1,11 @@
-package com.github.ldaniels528.bourne.server.routes
+package com.github.ldaniels528.bourne.server
+package routes
 
-import com.github.ldaniels528.bourne.dao.WorkflowDAO._
-import com.github.ldaniels528.bourne.dao.WorkflowData
+import com.github.ldaniels528.bourne.server.dao.WorkflowDAO._
+import com.github.ldaniels528.bourne.server.dao.WorkflowData
 import io.scalajs.npm.express.{Application, Request, Response}
 import io.scalajs.npm.expressws.WsRouting
-import io.scalajs.npm.mongodb._
+import io.scalajs.npm.mongodb.Db
 
 import scala.concurrent.ExecutionContext
 import scala.scalajs.js
@@ -23,7 +24,7 @@ class WorkflowRoutes(app: Application with WsRouting, db: Db)(implicit ec: Execu
   app.get("/api/workflow", (request: Request, response: Response, next: NextFunction) => {
     request.query.get("name") match {
       case Some(name) =>
-        workflowDAO.findOneAsync[WorkflowData](doc("name" $eq name)) onComplete {
+        workflowDAO.findByName(name) onComplete {
           case Success(Some(workflows)) => response.send(js.Array(workflows)); next()
           case Success(None) => response.send(js.Array()); next()
           case Failure(e) => response.internalServerError(e)

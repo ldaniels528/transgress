@@ -19,7 +19,7 @@ class JobService($http: Http) extends Service {
     * Retrieves jobs by state
     * @param states the given [[JobState states]]
     * @param ec     the [[ExecutionContext]]
-    * @return the resultant array of [[Job]]s
+    * @return the promise of the resultant array of [[Job]]s
     */
   def getJobs(states: JobState*)(implicit ec: ExecutionContext): js.Promise[HttpResponse[js.Array[Job]]] = {
     $http.get(if (states.nonEmpty) s"/api/jobs?states=${states.mkString("|")}" else "/api/jobs")
@@ -27,23 +27,32 @@ class JobService($http: Http) extends Service {
 
   /**
     * Pauses the given job
-    * @param jobId the given job ID
-    * @return the [[Job updated job]]
+    * @param jobId    the given job ID
+    * @param  slaveId the given slave ID
+    * @return the promise of the [[Job updated job]]
     */
-  def pauseJob(jobId: String): js.Promise[HttpResponse[Job]] = $http.get[Job](s"/api/job/$jobId/pause")
+  def pauseJob(jobId: String, slaveId: String): js.Promise[HttpResponse[Job]] = {
+    $http.get[Job](s"/api/job/$jobId/pause/$slaveId")
+  }
 
   /**
     * Resumes the given job
-    * @param jobId the given job ID
-    * @return the [[Job updated job]]
+    * @param jobId    the given job ID
+    * @param  slaveId the given slave ID
+    * @return the promise of the [[Job updated job]]
     */
-  def resumeJob(jobId: String): js.Promise[HttpResponse[Job]] = $http.get[Job](s"/api/job/$jobId/resume")
+  def resumeJob(jobId: String, slaveId: String): js.Promise[HttpResponse[Job]] = {
+    $http.get[Job](s"/api/job/$jobId/resume/$slaveId")
+  }
 
   /**
     * Stops the given job
-    * @param jobId the given job ID
-    * @return the [[Job updated job]]
+    * @param jobId    the given job ID
+    * @param  slaveId the given slave ID
+    * @return the promise of the [[Job updated job]]
     */
-  def stopJob(jobId: String): js.Promise[HttpResponse[Job]] = $http.get[Job](s"/api/job/$jobId/stop")
+  def stopJob(jobId: String, slaveId: String): js.Promise[HttpResponse[Job]] = {
+    $http.get[Job](s"/api/job/$jobId/stop/$slaveId")
+  }
 
 }

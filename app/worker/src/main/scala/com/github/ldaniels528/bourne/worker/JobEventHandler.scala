@@ -30,22 +30,4 @@ trait JobEventHandler {
     */
   def onFinish(data: js.Any): Future[Unit]
 
-  /**
-    * Pauses the job
-    * @return a completion promise
-    */
-  def pause(): Future[Boolean]
-
-  /**
-    * Resumes the paused or stopped the job
-    * @return a completion promise
-    */
-  def resume(): Future[Boolean]
-
-  /**
-    * Stops the job
-    * @return a completion promise
-    */
-  def stop(): Future[Boolean]
-
 }

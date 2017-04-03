@@ -12,7 +12,7 @@
                  ng-click="selectJob(job)"
                  ng-class="selectedJob == job ? 'highlight' : ''" class="row">
                 <div ng-class="selectedJob ? 'col-md-5' : 'col-md-2'">
-                    <img ng-src="{{ getStatusBulb(job) }}"> {{ job.workflowName }}
+                    <img ng-src="{{ getJobStatusBulb(job) }}"> {{ job.workflowName }}
                 </div>
                 <div ng-class="selectedJob ? 'col-md-7' : 'col-md-4'">{{ job.name }}</div>
                 <div ng-hide="selectedJob" class="col-md-2">
@@ -21,8 +21,8 @@
                 </div>
                 <div ng-hide="selectedJob" class="col-md-4">
                     <span ng-hide="job.message">
-                        <span ng-class="getStatusClass(job)">{{ job.state }}</span>
-                        <span ng-show="isRunning(job)">
+                        <span ng-class="getJobStatusClass(job)">{{ job.state }}</span>
+                        <span ng-show="isRunning(job) && job.statistics.completionTime">
                             <span class="null">&#8212;</span>
                             {{ job.statistics.completionTime | duration }}
                         </span>
@@ -51,7 +51,7 @@
                 </tr>
                 <tr>
                     <th>State</th>
-                    <td ng-class="getStatusClass(selectedJob)">{{ selectedJob.state }}</td>
+                    <td ng-class="getJobStatusClass(selectedJob)">{{ selectedJob.state }}</td>
                 </tr>
                 <tr ng-show="selectedJob.statistics">
                     <th>Records</th>

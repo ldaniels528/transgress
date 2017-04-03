@@ -1,5 +1,7 @@
 package com.github.ldaniels528.bourne.worker.devices
 
+import io.scalajs.util.ScalaJsHelper.isDefined
+import com.github.ldaniels528.bourne.worker.JobEventHandler
 import com.github.ldaniels528.bourne.worker.devices.FixedOutputDevice._
 import com.github.ldaniels528.bourne.worker.models.Source
 import io.scalajs.nodejs.fs.WriteStream
@@ -17,12 +19,17 @@ class FixedOutputDevice(source: Source, out: WriteStream)(implicit ec: Execution
 
   override def close(): Future[Unit] = out.closeAsync.future
 
-  override def flush(): Future[Int] = Future.successful(0)
+  override def flush()(implicit jobEventHandler: JobEventHandler): Future[Int] = Future.successful(0)
 
-  override def write(data: js.Any): Future[Int] = {
+  override def write(data: js.Any)(implicit jobEventHandler: JobEventHandler): Unit = {
     val dict = data.asInstanceOf[js.Dictionary[js.Any]]
     val line = source.fields.map(field => dict.get(field.name).map(_.toString).getOrElse("").sizeTo(field.length)).mkString
-    out.writeAsync(line + OS.EOL).future.map(_ => 1)
+    out.write(line + OS.EOL, error => {
+      if(isDefined(error)) jobEventHandler.onError(error)
+      else {
+        // TODO write statistics?
+      }
+    })
   }
 
 }

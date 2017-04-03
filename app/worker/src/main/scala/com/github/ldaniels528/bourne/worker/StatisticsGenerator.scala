@@ -32,46 +32,40 @@ class StatisticsGenerator(var sourceFileSize: Double = 0, val updateFrequency: F
 
   /**
     * Returns updated statistics every x frequency or when forced is true
-    * @param force indicates whether the statistics should be forced.
     * @return an option of the [[Statistics]]
     */
-  def update(force: Boolean = false): Option[Statistics] = {
+  def update(): Statistics = {
+    // compute the statistics
     val timeDelta = Math.max(js.Date.now() - lastUpdatedTime, 1.0)
-    if (force || timeDelta >= updateFrequency.toMillis) {
-      // compute the statistics
-      val timeDeltaSeconds = timeDelta / 1000
-      lastUpdatedTime = js.Date.now()
+    val timeDeltaSeconds = timeDelta / 1000
+    lastUpdatedTime = js.Date.now()
 
-      // records inserted
-      val recordsDelta = totalRead - lastRecordedCount
-      recordsPerSecond = recordsDelta / timeDeltaSeconds
-      lastRecordedCount = totalRead
+    // records inserted
+    val recordsDelta = totalRead - lastRecordedCount
+    recordsPerSecond = recordsDelta / timeDeltaSeconds
+    lastRecordedCount = totalRead
 
-      // bytes read
-      val bytesDelta = bytesRead - lastBytesRead
-      bytesPerSecond = bytesDelta / timeDeltaSeconds
-      lastBytesRead = bytesRead
+    // bytes read
+    val bytesDelta = bytesRead - lastBytesRead
+    bytesPerSecond = bytesDelta / timeDeltaSeconds
+    lastBytesRead = bytesRead
 
-      // estimated time of completion
-      val complete_% = if (sourceFileSize == 0) 0 else (bytesRead / sourceFileSize) * 100.0
-      val etc = {
-        val avgBps = bytesRead / ((js.Date.now() - processStartTime) / 1000)
-        (sourceFileSize - bytesRead) / avgBps
-      }
-
-      lastStats = Some(Statistics(
-        totalInserted = totalRead,
-        bytesRead = bytesRead,
-        bytesPerSecond = bytesPerSecond,
-        failures = failures,
-        recordsDelta = recordsDelta,
-        recordsPerSecond = recordsPerSecond,
-        complete_%,
-        completionTime = etc))
-
-      lastStats
+    // estimated time of completion
+    val complete_% = if (sourceFileSize == 0) 0 else (bytesRead / sourceFileSize) * 100.0
+    val etc = {
+      val avgBps = bytesRead / ((js.Date.now() - processStartTime) / 1000)
+      (sourceFileSize - bytesRead) / avgBps
     }
-    else None
+
+    Statistics(
+      totalInserted = totalRead,
+      bytesRead = bytesRead,
+      bytesPerSecond = bytesPerSecond,
+      failures = failures,
+      recordsDelta = recordsDelta,
+      recordsPerSecond = recordsPerSecond,
+      complete_%,
+      completionTime = etc)
   }
 
 }

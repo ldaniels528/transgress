@@ -2,9 +2,8 @@ package com.github.ldaniels528.bourne
 package server
 
 import com.github.ldaniels528.bourne.AppConstants._
-import com.github.ldaniels528.bourne.rest.LoggerFactory
-import com.github.ldaniels528.bourne.rest.ProcessHelper._
-import com.github.ldaniels528.bourne.rest.StringHelper._
+import com.github.ldaniels528.bourne.EnvironmentHelper._
+import com.github.ldaniels528.bourne.StringHelper._
 import com.github.ldaniels528.bourne.server.routes._
 import io.scalajs.nodejs.process
 import io.scalajs.npm.bodyparser.{BodyParser, UrlEncodedBodyOptions}
@@ -19,7 +18,7 @@ import scala.scalajs.js.annotation.JSExport
 import scala.util.{Failure, Success}
 
 /**
-  * Bourne Server
+  * Transgress Server
   * @author lawrence.daniels@gmail.com
   */
 object BourneServer extends js.JSApp {
@@ -34,7 +33,7 @@ object BourneServer extends js.JSApp {
 
     // setup mongodb connection
     logger.info("Loading MongoDB module...")
-    val dbConnect = process.dbConnect getOrElse "mongodb://localhost:27017/bourne"
+    val dbConnect = process.dbConnectOrDefault
     logger.info("Connecting to database '%s'...", dbConnect)
     MongoClient.connectAsync(dbConnect).toFuture onComplete {
       case Success(db) =>
@@ -104,6 +103,7 @@ object BourneServer extends js.JSApp {
     // setup all other routes
     logger.info("Setting up all other routes...")
     new JobRoutes(app, db)
+    new SlaveRoutes(app, db)
     new WorkflowRoutes(app, db)
     app
   }

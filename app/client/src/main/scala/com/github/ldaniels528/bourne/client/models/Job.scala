@@ -4,21 +4,22 @@ package models
 import com.github.ldaniels528.bourne.models.{JobLike, StatisticsLike}
 
 import scala.scalajs.js
+import scala.scalajs.js.annotation.ScalaJSDefined
 
 /**
   * Represents a job model
   * @author lawrence.daniels@gmail.com
   */
-@js.native
-trait Job extends JobLike with Expandable {
-  var _id: js.UndefOr[String] = js.native
-  var name: js.UndefOr[String] = js.native
-  var input: js.UndefOr[String] = js.native
-  var workflowName: js.UndefOr[String] = js.native
-  var state: js.UndefOr[String] = js.native
-  var lastUpdated: js.UndefOr[Double] = js.native
-  var message: js.UndefOr[String] = js.native
-  var processingHost: js.UndefOr[String] = js.native
-  var statistics: js.UndefOr[StatisticsLike] = js.native
-
-}
+@ScalaJSDefined
+class Job(var _id: js.UndefOr[String] = js.undefined,
+          var name: js.UndefOr[String] = js.undefined,
+          var input: js.UndefOr[String] = js.undefined,
+          var inputSize: js.UndefOr[Double] = js.undefined,
+          var slaveID: js.UndefOr[String] = js.undefined,
+          var workflowName: js.UndefOr[String] = js.undefined,
+          var state: js.UndefOr[String] = js.undefined,
+          var lastUpdated: js.UndefOr[Double] = js.undefined,
+          var message: js.UndefOr[String] = js.undefined,
+          var processingHost: js.UndefOr[String] = js.undefined,
+          var statistics: js.UndefOr[StatisticsLike] = js.undefined)
+  extends JobLike with Expandable

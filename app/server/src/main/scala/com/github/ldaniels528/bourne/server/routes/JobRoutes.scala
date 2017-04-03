@@ -1,11 +1,12 @@
 package com.github.ldaniels528.bourne.server
 package routes
 
+import com.github.ldaniels528.bourne.LoggerFactory
 import com.github.ldaniels528.bourne.RemoteEvent._
-import com.github.ldaniels528.bourne.dao.JobDAO._
-import com.github.ldaniels528.bourne.dao.JobData
-import com.github.ldaniels528.bourne.models.{JobOperation, JobStates, StatisticsLike, StatusMessage}
-import com.github.ldaniels528.bourne.rest.{Job, LoggerFactory}
+import com.github.ldaniels528.bourne.models.{JobLike, JobStates, StatisticsLike, StatusMessage}
+import com.github.ldaniels528.bourne.server.dao.JobDAO._
+import com.github.ldaniels528.bourne.server.dao.JobData
+import com.github.ldaniels528.bourne.server.dao.SlaveDAO._
 import io.scalajs.JSON
 import io.scalajs.npm.express.{Application, Request, Response}
 import io.scalajs.npm.expressws.WsRouting
@@ -25,6 +26,7 @@ import scala.util.{Failure, Success}
 class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionContext) {
   private val logger = LoggerFactory.getLogger(getClass)
   private val jobDAO = db.getJobDAO
+  private val slaveDAO = db.getSlaveDAO
 
   /////////////////////////////////////////////////////////
   //    Accessor Routes
@@ -35,7 +37,7 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
     */
   app.get("/api/job/:id", (request: Request, response: Response, next: NextFunction) => {
     val id = request.params.apply("id")
-    jobDAO.findByID(id) onComplete {
+    jobDAO.findOneByID(id) onComplete {
       case Success(Some(job)) => response.send(js.Array(job)); next()
       case Success(None) => response.send(js.Array()); next()
       case Failure(e) => response.internalServerError(e); next()
@@ -95,7 +97,7 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
   /**
     * Pauses a job
     */
-  app.get("/api/job/:id/pause", (request: Request, response: Response, next: NextFunction) => {
+  app.get("/api/job/:jobID/pause/:slaveID", (request: Request, response: Response, next: NextFunction) => {
     jobManagement(request, response, action = "pause") onComplete {
       case Success(job) => response.send(job); next()
       case Failure(e) => response.internalServerError(e); next()
@@ -105,7 +107,7 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
   /**
     * Resumes a job
     */
-  app.get("/api/job/:id/resume", (request: Request, response: Response, next: NextFunction) => {
+  app.get("/api/job/:jobID/resume/:slaveID", (request: Request, response: Response, next: NextFunction) => {
     jobManagement(request, response, action = "resume") onComplete {
       case Success(job) => response.send(job); next()
       case Failure(e) => response.internalServerError(e); next()
@@ -115,7 +117,7 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
   /**
     * Stops a job
     */
-  app.get("/api/job/:id/stop", (request: Request, response: Response, next: NextFunction) => {
+  app.get("/api/job/:jobID/stop/:slaveID", (request: Request, response: Response, next: NextFunction) => {
     jobManagement(request, response, action = "stop") onComplete {
       case Success(job) => response.send(job); next()
       case Failure(e) => response.internalServerError(e); next()
@@ -123,45 +125,32 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
   })
 
   private def jobManagement(request: Request, response: Response, action: String) = {
-    val jobId = request.params.apply("id")
+    val jobID = request.params.apply("jobID")
+    val slaveID = request.params.apply("slaveID")
     for {
-      job_? <- jobDAO.findByID(jobId)
-      job <- job_? match {
-        case Some(job) => workerRequest(job, s"job/$jobId/$action")
-        case None => Future.failed(js.JavaScriptException(s"Job $jobId not found"))
+      endpoint_? <- slaveDAO.findOneByID(slaveID) flatMap  {
+        case Some(slave) => Future.successful(slave.getEndpoint.toOption)
+        case None => Future.failed(js.JavaScriptException(s"Slave $slaveID not found"))
       }
-      state = job.state.orDie(s"Job $jobId has no state")
-      _ <- jobDAO.changeState(jobId, state, message = job.message).toFuture
+      job <- endpoint_? match {
+        case Some(endpoint) => workerRequest(endpoint, s"job/$jobID/$action")
+        case None => Future.failed(js.JavaScriptException(s"Job $jobID not found"))
+      }
+      state = job.state.orDie(s"Job $jobID has no state")
+      _ <- jobDAO.changeState(jobID, state, message = job.message).toFuture
     } yield job
   }
 
-  private def getJobInfo(job: JobData, op: JobOperation) = {
-    val result = for {
-      _id <- job._id
-      state <- job.state
-    } yield (_id, state)
-
-    result.toOption match {
-      case Some((_id, state)) => Future.successful((job, _id.toHexString(), state))
-      case None => Future.failed(js.JavaScriptException(s"Job ${job._id} is corrupted"))
-    }
-  }
-
-  private def workerRequest(job: JobData, api: String) = {
-    job.processingHost.toOption match {
-      case Some(host) =>
-        val url = s"http://$host:1337/api/worker/$api"
-        logger.info(s"WORKER call ~> $url")
-        Client.getAsync(url).future map {
-          case (_, body) =>
-            logger.info(s"WORKER RESPONSE ${JSON.stringify(body)}")
-            body match {
-              case s if js.typeOf(s) == "string" => JSON.parseAs[Job](body.asInstanceOf[String])
-              case o => o.asInstanceOf[Job]
-            }
+  private def workerRequest(endpoint: String, uri: String) = {
+    val url = s"http://$endpoint/api/worker/$uri"
+    logger.info(s"WORKER call ~> $url")
+    Client.getAsync(url).future map {
+      case (_, body) =>
+        logger.info(s"WORKER RESPONSE ${JSON.stringify(body)}")
+        body match {
+          case s if js.typeOf(s) == "string" => JSON.parseAs[JobLike](body.asInstanceOf[String])
+          case o => o.asInstanceOf[JobLike]
         }
-      case None =>
-        Future.failed(js.JavaScriptException(s"Job ${job._id} is not claimed"))
     }
   }
 
@@ -187,9 +176,18 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
   /**
     * Retrieves the next job from the queue
     */
-  app.patch("/api/jobs/checkout/:host", (request: Request, response: Response, next: NextFunction) => {
-    val host = request.params.apply("host")
-    jobDAO.checkoutJob(host).toFuture onComplete {
+  app.patch("/api/jobs/checkout/:slaveID", (request: Request, response: Response, next: NextFunction) => {
+    val slaveID = request.params.apply("slaveID")
+    val outcome = for {
+      slave_? <- slaveDAO.findOneByID(slaveID)
+      endpoint_? = for {slave <- slave_?; host <- slave.host.toOption; port <- slave.port.toOption} yield s"$host:$port"
+      result <- endpoint_? match {
+        case Some(endpoint) => jobDAO.checkoutJob(slaveID, endpoint).toFuture
+        case None => Future.failed(js.JavaScriptException(s"Slave # $slaveID not found"))
+      }
+    } yield result
+
+    outcome onComplete {
       case Success(result) if result.value != null =>
         WebSocketHandler.emit(JOB_UPDATE, result.value)
         response.send(js.Array(result.value))

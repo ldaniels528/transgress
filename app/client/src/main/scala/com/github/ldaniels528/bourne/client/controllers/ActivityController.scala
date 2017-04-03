@@ -27,10 +27,6 @@ class ActivityController($scope: ActivityScope, $interval: Interval, toaster: To
     console.info(s"Initializing ${getClass.getSimpleName}...")
   }
 
-  /**
-    * Returns only the currently running jobs
-    */
-  $scope.getRunningJobs = () => $scope.jobs.filterNot(_.state.contains(JobStates.SUCCESS))
 
 }
 
@@ -43,6 +39,5 @@ trait ActivityScope extends Scope with JobHandlingScope {
 
   // functions
   var init: js.Function0[Unit] = js.native
-  var getRunningJobs: js.Function0[js.Array[Job]] = js.native
 
 }

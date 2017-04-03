@@ -1,15 +1,17 @@
 package com.github.ldaniels528.bourne.worker
 
 import com.github.ldaniels528.bourne.AppConstants._
-import com.github.ldaniels528.bourne.rest.ProcessHelper._
-import com.github.ldaniels528.bourne.rest.StringHelper._
-import com.github.ldaniels528.bourne.rest.{JobClient, LoggerFactory, WorkflowClient}
+import com.github.ldaniels528.bourne.LoggerFactory
+import com.github.ldaniels528.bourne.EnvironmentHelper._
+import com.github.ldaniels528.bourne.StringHelper._
+import com.github.ldaniels528.bourne.rest._
 import com.github.ldaniels528.bourne.worker.routes.{NextFunction, WorkerRoutes}
 import io.scalajs.JSON
 import io.scalajs.nodejs.fs.Fs
 import io.scalajs.nodejs.{process, setInterval}
 import io.scalajs.npm.bodyparser.{BodyParser, UrlEncodedBodyOptions}
 import io.scalajs.npm.express._
+import io.scalajs.npm.ip.IP
 import io.scalajs.util.DurationHelper._
 import io.scalajs.util.OptionHelper._
 
@@ -21,7 +23,7 @@ import scala.scalajs.js.annotation.JSExport
 import scala.util.{Failure, Success}
 
 /**
-  * Bourne Worker
+  * Transgress Worker
   * @author lawrence.daniels@gmail.com
   */
 object Worker extends js.JSApp {
@@ -34,48 +36,53 @@ object Worker extends js.JSApp {
     * Runs the worker application
     */
   def run(): Unit = {
-    logger.info(f"Starting the Bourne Worker v$Version%.1f...")
+    logger.info(f"Starting the Transgress Worker v$Version%.1f...")
 
-    // get the configuration directory
-    val configDirectory = process.env.get("BOURNE_HOME") orDie "Environment variable BOURNE_HOME is not defined"
-
-    // capture the start time
+     // capture the start time
     val startTime = js.Date.now()
 
     // load the worker config
+    val configDirectory = process.homeDirectory orDie s"Environment variable $BOURNE_HOME is not defined"
     implicit val config = WorkerConfig.load(configDirectory)
 
+    // determine the host and listen port
+    val host = IP.address()
+    val port = process.port getOrElse "1337"
+
     // initialize the job & workflow clients
-    val master = config.master.getOrElse("localhost:9000")
+    val master = config.master.getOrElse(process.master getOrElse "localhost:9000")
     implicit val jobClient = new JobClient(master)
+    implicit val slaveClient = new SlaveClient(master)
     implicit val workflowClient = new WorkflowClient(master)
 
     // ensure the local processing directories exist
     val outcome = for {
       results <- ensureLocalDirectories()
+      slave <- registerAsSlave(host, port)
       _ <- downloadWorkflows()
-    } yield results
+    } yield (slave, results)
 
     outcome onComplete {
-      case Success(results) =>
+      case Success((slave, results)) =>
+        logger.info(s"slave = ${JSON.stringify(slave)}")
+
         // were directories created?
         results foreach { case (directory, exists) =>
           if (!exists) logger.info(s"Created directory '$directory'...")
         }
 
         // start the job processor
-        val jobProcessor = new JobProcessor()
-        setInterval(() => jobProcessor.searchForNewFiles(), 5.seconds)
+        val jobProcessor = new JobProcessor(slave)
         setInterval(() => jobProcessor.run(), 30.seconds)
 
         // setup the application
-        val port = process.port getOrElse "1337"
         val app = configureApplication(jobProcessor)
         app.listen(port, () => logger.info("Server now listening on port %s [%d msec]", port, js.Date.now() - startTime))
 
         // handle any uncaught exceptions
         process.onUncaughtException { err =>
           logger.error("An uncaught exception was fired:", err.stack)
+          logger.error(err.stack)
         }
       case Failure(e) =>
         logger.error(s"Failed to initialize the worker: ${e.getMessage}")
@@ -132,6 +139,16 @@ object Worker extends js.JSApp {
     }
   }
 
+  private def registerAsSlave(host: String, port: String)(implicit config: WorkerConfig, slaveClient: SlaveClient) = {
+    logger.info("Registering as a slave to master...")
+    slaveClient.upsertSlave(new Slave(
+      host = host,
+      port = port,
+      maxConcurrency = config.getMaxConcurrency,
+      concurrency = 0
+    ))
+  }
+
   /**
     * Ensures all local processing directories exist
     * @param config the given [[WorkerConfig worker configuration]]
@@ -159,7 +176,8 @@ object Worker extends js.JSApp {
   private def ensureLocalDirectory(directory: String) = {
     for {
       exists <- Fs.existsAsync(directory).future
-      _ <- if (!exists) Fs.mkdirAsync(directory).future else Future.successful({})
+      _ <- if (!exists) Fs.mkdirAsync(directory).future else Future.successful({
+      })
     } yield (directory, exists)
   }
 

@@ -1,22 +1,25 @@
 package com.github.ldaniels528.bourne
 package cli
 
-import scala.scalajs.js.JSConverters._
+import io.scalajs.util.ScalaJsHelper._
 import com.github.ldaniels528.bourne.AppConstants._
 import com.github.ldaniels528.bourne.rest.JobClient
-import io.scalajs.JSON
-import io.scalajs.nodejs.console
 import io.scalajs.nodejs.fs.Fs
-import io.scalajs.nodejs.repl._
-import io.scalajs.util.ScalaJsHelper._
+import io.scalajs.nodejs.repl.REPLServer
+import io.scalajs.nodejs.setTimeout
+import io.scalajs.npm.otaatrepl.{OTaaTRepl, OTaaTReplOptions}
+import io.scalajs.util.DurationHelper._
 
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.scalajs.js
+import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.annotation.JSExport
-import scala.util.{Failure, Success}
 
 /**
-  * JSON.Born Command Line Interface
+  * Transgress Command Line Interface
   * @author lawrence.daniels@gmail.com
   */
 object BourneCLI extends js.JSApp {
@@ -28,29 +31,27 @@ object BourneCLI extends js.JSApp {
     println(f"Starting the JSON.Born CLI v$Version%.1f...")
 
     implicit val jobClient = new JobClient("localhost:9000")
-    val replServer = REPL.start(new REPLOptions(
+    val replServer = OTaaTRepl.start(new OTaaTReplOptions(
       prompt = "json.born> "
       //,eval = myEval
     ))
     replServer.context.job = job
     replServer.context.jobs = jobs
+    replServer.context.workers = workers
   }
 
-  def job(implicit jobClient: JobClient): js.Function = (aJobId: js.UndefOr[String]) => aJobId foreach { jobId =>
-    jobClient.getJobByID(jobId) onComplete {
-      case Success(Some(job)) => console.log(JSON.stringify(job, null, 4))
-      case Success(None) =>
-      case Failure(e) => console.error(e.getMessage)
-    }
-    ""
+  def job(implicit jobClient: JobClient): js.Function = (aJobId: js.UndefOr[String]) => aJobId map { jobId =>
+    jobClient.getJobByID(jobId).map(_.orNull).toJSPromise
   }
 
   def jobs(implicit jobClient: JobClient): js.Function = () => {
-    jobClient.getJobs onComplete {
-      case Success(jobs) => console.log(JSON.stringify(jobs, null, 4))
-      case Failure(e) => console.error(e.getMessage)
-    }
-    ""
+    jobClient.getJobs.toJSPromise
+  }
+
+  def workers(implicit jobClient: JobClient): js.Function = () => {
+    val promise = Promise[String]()
+    setTimeout(() => promise.success("Hello"), 1.second)
+    promise.future.toJSPromise
   }
 
   def myEval: js.Function = (cmd: String, context: js.Dynamic, filename: String, callback: js.Function2[Error, js.Any, Any]) => {

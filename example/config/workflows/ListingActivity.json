@@ -12,7 +12,7 @@
         {
             "name": "listing-activity-json",
             "type": "file",
-            "path": "./examples/incoming/LISTING_ACTIVITY-{{$date:YYYYMMDD}}.json",
+            "path": "./example/incoming/LISTING_ACTIVITY-{{$date:YYYYMMDD}}T{{$date:hhmmss}}.json",
             "format": "json"
         }
     ],

@@ -1,6 +1,7 @@
 package com.github.ldaniels528.bourne.worker
 
-import com.github.ldaniels528.bourne.rest.LoggerFactory
+import com.github.ldaniels528.bourne.LoggerFactory
+import com.github.ldaniels528.bourne.worker.models.Trigger
 import io.scalajs.JSON
 import io.scalajs.nodejs.fs.Fs
 import io.scalajs.nodejs.os.OS

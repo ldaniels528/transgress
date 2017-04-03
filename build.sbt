@@ -15,14 +15,16 @@ javacOptions ++= Seq("-Xlint:deprecation", "-Xlint:unchecked", "-source", "1.8",
 lazy val copyJS = TaskKey[Unit]("copyJS", "Copy JavaScript files to root directory")
 copyJS := {
   val out_dir = baseDirectory.value
-  val web_dir = out_dir / "app" / "server" / "target" / "scala-2.12"
   val cli_dir = out_dir / "app" / "cli" / "target" / "scala-2.12"
+  val server_dir = out_dir / "app" / "server" / "target" / "scala-2.12"
+  val watcher_dir = out_dir / "app" / "watcher" / "target" / "scala-2.12"
   val worker_dir = out_dir / "app" / "worker" / "target" / "scala-2.12"
 
-  val files1 = Seq("", ".map") map ("bourne-server-fastopt.js" + _) map (s => (web_dir / s, out_dir / s))
+  val files1 = Seq("", ".map") map ("bourne-server-fastopt.js" + _) map (s => (server_dir / s, out_dir / s))
   val files2 = Seq("", ".map") map ("bourne-cli-fastopt.js" + _) map (s => (cli_dir / s, out_dir / s))
-  val files3 = Seq("", ".map") map ("bourne-worker-fastopt.js" + _) map (s => (worker_dir / s, out_dir / s))
-  IO.copy(files1 ++ files2 ++ files3, overwrite = true)
+  val files3 = Seq("", ".map") map ("bourne-watcher-fastopt.js" + _) map (s => (watcher_dir / s, out_dir / s))
+  val files4 = Seq("", ".map") map ("bourne-worker-fastopt.js" + _) map (s => (worker_dir / s, out_dir / s))
+  IO.copy(files1 ++ files2 ++ files3 ++ files4, overwrite = true)
 }
 
 lazy val testDependencies = Seq(
@@ -74,38 +76,21 @@ lazy val common = (project in file("./app/common"))
   .settings(commonSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "bourne-webapp-common",
-    organization := "com.github.ldaniels528.bourne",
+    name := "bourne-common",
+    organization := "com.github.ldaniels528",
     version := appVersion,
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion
     ))
 
-lazy val data_access = (project in file("./app/data_access"))
-  .aggregate(common)
-  .dependsOn(common)
-  .enablePlugins(ScalaJSPlugin)
-  .settings(commonSettings: _*)
-  .settings(testDependencies: _*)
-  .settings(
-    name := "bourne-data-access",
-    organization := "com.github.ldaniels528.bourne",
-    version := appVersion,
-    libraryDependencies ++= Seq(
-      "io.scalajs" %%% "core" % scalaJsIoVersion,
-      "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "mongodb" % scalaJsIoVersion
-    ))
-
-lazy val rest_api = (project in file("./app/rest_api"))
-  .aggregate(common)
-  .dependsOn(common)
+lazy val rest_common = (project in file("./app/rest-common"))
+  .dependsOn(common, server_common)
   .enablePlugins(ScalaJSPlugin)
   .settings(commonSettings: _*)
   .settings(testDependencies: _*)
   .settings(
     name := "bourne-rest-common",
-    organization := "com.github.ldaniels528.bourne",
+    organization := "com.github.ldaniels528",
     version := appVersion,
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
@@ -113,22 +98,18 @@ lazy val rest_api = (project in file("./app/rest_api"))
       "io.scalajs.npm" %%% "request" % scalaJsIoVersion
     ))
 
-lazy val cli = (project in file("./app/cli"))
-  .aggregate(common, rest_api)
-  .dependsOn(common, rest_api)
+lazy val server_common = (project in file("./app/server-common"))
+  .dependsOn(common)
   .enablePlugins(ScalaJSPlugin)
-  .settings(appSettings: _*)
+  .settings(commonSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "bourne-cli",
-    organization := "com.github.ldaniels528.bourne",
+    name := "bourne-server-common",
+    organization := "com.github.ldaniels528",
     version := appVersion,
-    scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
       "io.scalajs" %%% "core" % scalaJsIoVersion,
-      "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "glob" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "request" % scalaJsIoVersion
+      "io.scalajs" %%% "nodejs" % scalaJsIoVersion
     ))
 
 lazy val client = (project in file("./app/client"))
@@ -139,7 +120,7 @@ lazy val client = (project in file("./app/client"))
   .settings(testDependencies: _*)
   .settings(
     name := "bourne-web-client",
-    organization := "com.github.ldaniels528.bourne",
+    organization := "com.github.ldaniels528",
     version := appVersion,
     scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
@@ -150,15 +131,34 @@ lazy val client = (project in file("./app/client"))
       "io.scalajs.npm" %%% "angularjs-toaster" % scalaJsIoVersion
     ))
 
+lazy val cli = (project in file("./app/cli"))
+  .aggregate(common, rest_common, server_common)
+  .dependsOn(common, rest_common, server_common)
+  .enablePlugins(ScalaJSPlugin)
+  .settings(appSettings: _*)
+  .settings(testDependencies: _*)
+  .settings(
+    name := "bourne-cli",
+    organization := "com.github.ldaniels528",
+    version := appVersion,
+    scalaJSUseMainModuleInitializer := true,
+    libraryDependencies ++= Seq(
+      "io.scalajs" %%% "core" % scalaJsIoVersion,
+      "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "glob" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "otaat-repl" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "request" % scalaJsIoVersion
+    ))
+
 lazy val server = (project in file("./app/server"))
-  .aggregate(common, client, rest_api, data_access)
-  .dependsOn(common, rest_api, data_access)
+  .aggregate(common, client, server_common)
+  .dependsOn(common, server_common)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
   .settings(
     name := "bourne-server",
-    organization := "com.github.ldaniels528.bourne",
+    organization := "com.github.ldaniels528",
     version := appVersion,
     scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
@@ -173,15 +173,40 @@ lazy val server = (project in file("./app/server"))
       "io.scalajs.npm" %%% "splitargs" % scalaJsIoVersion
     ))
 
+lazy val watcher = (project in file("./app/watcher"))
+  .aggregate(common, rest_common, server_common)
+  .dependsOn(common, rest_common, server_common)
+  .enablePlugins(ScalaJSPlugin)
+  .settings(appSettings: _*)
+  .settings(testDependencies: _*)
+  .settings(
+    name := "bourne-watcher",
+    organization := "com.github.ldaniels528",
+    version := appVersion,
+    scalaJSUseMainModuleInitializer := true,
+    libraryDependencies ++= Seq(
+      "io.scalajs" %%% "core" % scalaJsIoVersion,
+      "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "body-parser" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "express" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "glob" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "gzip-uncompressed-size" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "ip" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "mkdirp" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "moment" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "moment-duration-format" % scalaJsIoVersion,
+      "io.scalajs.npm" %%% "request" % scalaJsIoVersion
+    ))
+
 lazy val worker = (project in file("./app/worker"))
-  .aggregate(common, rest_api, data_access)
-  .dependsOn(common, rest_api, data_access)
+  .aggregate(common, rest_common, server_common)
+  .dependsOn(common, rest_common, server_common)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
   .settings(
     name := "bourne-worker",
-    organization := "com.github.ldaniels528.bourne",
+    organization := "com.github.ldaniels528",
     version := appVersion,
     scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
@@ -201,14 +226,14 @@ lazy val worker = (project in file("./app/worker"))
     ))
 
 lazy val bourne_js = (project in file("."))
-  .aggregate(cli, client, server, worker)
-  .dependsOn(cli, client, server, worker)
+  .aggregate(cli, client, server, watcher, worker)
+  .dependsOn(cli, client, server, watcher, worker)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
   .settings(
     name := "bourne.js",
-    organization := "com.github.ldaniels528.bourne",
+    organization := "com.github.ldaniels528",
     version := appVersion,
     scalaVersion := appScalaVersion,
     relativeSourceMaps := true,

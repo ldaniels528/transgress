@@ -1,50 +1,47 @@
 package com.github.ldaniels528.bourne.worker.devices
 
-import com.github.ldaniels528.bourne.rest.LoggerFactory
-import com.github.ldaniels528.bourne.worker.ExpressionEvaluator
 import com.github.ldaniels528.bourne.worker.models.Source
 import io.scalajs.nodejs.fs.Fs
+import io.scalajs.util.OptionHelper._
 
 import scala.concurrent.ExecutionContext
+import scala.scalajs.js
+import scala.util.Try
 
 /**
   * Device Factory
   * @author lawrence.daniels@gmail.com
   */
 object DeviceFactory {
-  private val logger = LoggerFactory.getLogger(getClass)
 
-  def getInputDevice(source: Source)(implicit ec: ExecutionContext): Option[InputDevice] = {
+  def getInputDevice(source: Source)(implicit ec: ExecutionContext): Try[InputDevice] = Try {
     source.`type` match {
-      case "file" => Some(new TextFileInputDevice(source, source.createReadStream))
+      case "file" => new TextFileInputDevice(source, source.createReadStream)
       case kind =>
-        logger.error(s"Unhandled input source type '$kind'")
-        None
+        throw js.JavaScriptException(s"Unhandled input source type '$kind'")
     }
   }
 
-  def getOutputDevice(source: Source)(implicit ec: ExecutionContext): Option[OutputDevice] = {
+  def getOutputDevice(source: Source)(implicit ec: ExecutionContext): Try[OutputDevice] = Try {
     source.`type` match {
       case "file" =>
         val stream = Fs.createWriteStream(source.path)
         source.format match {
-          case "csv" => Some(new DelimitedOutputDevice(stream, delimiter = ","))
-          case "fixed" => Some(new FixedOutputDevice(source, stream))
-          case "json" => Some(new JSONOutputDevice(stream))
-          case "psv" => Some(new DelimitedOutputDevice(stream, delimiter = "|"))
-          case "tsv" => Some(new DelimitedOutputDevice(stream, delimiter = "\t"))
+          case "csv" => new DelimitedOutputDevice(stream, delimiter = ",")
+          case "fixed" => new FixedOutputDevice(source, stream)
+          case "json" => new JSONOutputDevice(stream)
+          case "psv" => new DelimitedOutputDevice(stream, delimiter = "|")
+          case "tsv" => new DelimitedOutputDevice(stream, delimiter = "\t")
           case format =>
-            logger.error(s"Unhandled file output source format '$format'")
-            None
+            throw js.JavaScriptException(s"Unhandled file output source format '$format'")
         }
       case "mongo" =>
-        for {
+        (for {
           mongoConnect <- source.mongoConnect
           collection <- source.mongoCollection
-        } yield new MongoDBOutputDevice(mongoConnect, collection)
+        } yield new MongoDBOutputDevice(mongoConnect, collection)) orDie "Invalid MongoDB configuration"
       case kind =>
-        logger.error(s"Unhandled output source type '$kind'")
-        None
+        throw js.JavaScriptException(s"Unhandled output source type '$kind'")
     }
   }
 

@@ -1,5 +1,6 @@
 package com.github.ldaniels528.bourne.worker.devices
 
+import com.github.ldaniels528.bourne.worker.JobEventHandler
 import io.scalajs.npm.mongodb.{MongoClient, WriteOptions}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -19,17 +20,16 @@ class MongoDBOutputDevice(mongoConnect: String, collection: String)(implicit ec:
 
   override def close(): Future[Unit] = dbFuture.flatMap(_.close().toFuture.map(_ => ()))
 
-  override def flush(): Future[Int] = {
+  override def flush()(implicit jobEventHandler: JobEventHandler): Future[Int] = {
     if (batch.nonEmpty) persistBatch(batch) else Future.successful(0)
   }
 
-  override def write(data: js.Any): Future[Int] = {
+  override def write(data: js.Any)(implicit jobEventHandler: JobEventHandler): Unit = {
     if (batch.push(data) >= 100) {
       val batchTemp = batch
       batch = js.Array[js.Any]()
       persistBatch(batchTemp)
     }
-    else Future.successful(0)
   }
 
   private def persistBatch(aBatch: js.Array[js.Any]) = {

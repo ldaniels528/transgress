@@ -2,7 +2,7 @@ package com.github.ldaniels528.bourne
 package client
 
 import com.github.ldaniels528.bourne.client.controllers._
-import com.github.ldaniels528.bourne.client.services.{JobService, WebSocketService, WorkflowService}
+import com.github.ldaniels528.bourne.client.services.{JobService, SlaveService, WebSocketService, WorkflowService}
 import io.scalajs.npm.angularjs.uirouter.{RouteProvider, RouteTo}
 import io.scalajs.npm.angularjs.{Module, Scope, Timeout, angular}
 
@@ -10,7 +10,7 @@ import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExport
 
 /**
-  * Bourne Client JavaScript Application
+  * Transgress Client JavaScript Application
   * @author lawrence.daniels@gmail.com
   */
 object BourneClientJSApp extends js.JSApp {
@@ -67,6 +67,7 @@ object BourneClientJSApp extends js.JSApp {
 
   private def configureServices(module: Module) {
     module.serviceOf[JobService]("JobService")
+    module.serviceOf[SlaveService]("SlaveService")
     module.serviceOf[WebSocketService]("WebSocketService")
     module.serviceOf[WorkflowService]("WorkflowService")
   }

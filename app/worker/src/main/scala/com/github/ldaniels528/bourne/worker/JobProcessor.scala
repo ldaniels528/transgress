@@ -1,8 +1,9 @@
 package com.github.ldaniels528.bourne.worker
 
+import com.github.ldaniels528.bourne.LoggerFactory
 import com.github.ldaniels528.bourne.models.JobStates.JobState
 import com.github.ldaniels528.bourne.models.{JobStates, StatisticsLike, WorkflowLike}
-import com.github.ldaniels528.bourne.rest.{Job, JobClient, LoggerFactory, WorkflowClient}
+import com.github.ldaniels528.bourne.rest._
 import com.github.ldaniels528.bourne.worker.JobProcessor._
 import com.github.ldaniels528.bourne.worker.devices._
 import com.github.ldaniels528.bourne.worker.models.Workflow
@@ -10,11 +11,8 @@ import com.github.ldaniels528.bourne.worker.models.Workflow._
 import io.scalajs.JSON
 import io.scalajs.nodejs.fs.Fs
 import io.scalajs.nodejs.path.Path
-import io.scalajs.nodejs.{Error, setImmediate, setTimeout}
-import io.scalajs.npm.glob.{Glob, _}
-import io.scalajs.npm.ip.IP
+import io.scalajs.nodejs.{Error, setInterval, setTimeout}
 import io.scalajs.npm.mkdirp.Mkdirp
-import io.scalajs.util.DateHelper._
 import io.scalajs.util.DurationHelper._
 import io.scalajs.util.JsUnderOrHelper._
 
@@ -28,7 +26,7 @@ import scala.util.{Failure, Success}
   * Job Processor
   * @author lawrence.daniels@gmail.com
   */
-class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowDAO: WorkflowClient, ec: ExecutionContext)
+class JobProcessor(slave: Slave)(implicit config: WorkerConfig, jobDAO: JobClient, slaveDAO: SlaveClient, workflowDAO: WorkflowClient, ec: ExecutionContext)
   extends JobFileTracking {
   private val logger = LoggerFactory.getLogger(getClass)
   private var active = 0
@@ -39,99 +37,55 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
   def run(): Unit = {
     // if no process is active, start one ...
     if (active < config.getMaxConcurrency) {
-      jobDAO.getNextJob(IP.address()) foreach {
-        case Some(job) =>
-          active += 1
+      slave._id foreach { slaveID =>
+        jobDAO.getNextJob(slaveID) foreach {
+          case Some(job) =>
+            active += 1
+            slave.concurrency = active
+            val outcome = for {
+              _ <- slaveDAO.upsertSlave(slave)
+              _ <- prepareJobForProcessing(job)
+            } yield ()
 
-          val outcome = for {
-            _ <- job.changeState(JobStates.QUEUED)
-            workflow <- loadWorkflow(job)
-            _ <- job.changeState(JobStates.RUNNING)
-            statistics <- compileAndRunWorkflow(workflow)(job)
-            _ <- job.changeState(JobStates.SUCCESS)
-          } yield statistics
+            outcome onComplete { _ =>
+              active -= 1
+              slave.concurrency = active
+              slaveDAO.upsertSlave(slave)
 
-          outcome onComplete {
-            case Success(stats) =>
-              job.info(s"File '${job.input}' completed successfully")
-              job.info(s"$stats")
+              // remove the job
+              untrackJob(job)
+            }
 
-            case Failure(e) =>
-              job.error(s"File '${job.input}' failed")
-              job.error(s"${e.getMessage}", e)
-              job.changeState(JobStates.STOPPED, e.getMessage)
-          }
+            // are there more files available?
+            setTimeout(() => run(), 5.seconds)
 
-          outcome onComplete { _ =>
-            active -= 1
-
-            // remove the job
-            untrackJob(job)
-          }
-
-          // are there more files available?
-          setImmediate(() => run())
-
-        case None =>
-        // No jobs found
-      }
-    }
-  }
-
-  def searchForNewFiles(): Unit = {
-    for {
-      (name, trigger) <- config.triggers getOrElse js.Dictionary()
-      pattern <- trigger.patterns getOrElse js.Array()
-    } {
-      Glob.async(s"${config.incomingDirectory}/$pattern").future onComplete {
-        case Success(files) =>
-          for {
-            file <- files if !isWatchedOrTracked(file)
-          } ensureCompleteFile(trigger, file)
-        case Failure(e) =>
-          logger.error(s"$name: Failed while searching for new files: ${e.getMessage}")
-      }
-    }
-  }
-
-  private def ensureCompleteFile(trigger: Trigger, file: String): Unit = {
-    Fs.statAsync(file).future onComplete {
-      case Success(stats) =>
-        watch(file, stats) match {
-          case w if w.stats.size != stats.size || w.stats.mtime.getTime() != stats.mtime.getTime() =>
-            logger.info(s"${trigger.name}: '$file' has changed (size = ${stats.size - w.stats.size}, mtime = ${stats.mtime - w.stats.mtime})")
-            w.stats = stats
-            setTimeout(() => ensureCompleteFile(trigger, file), 15.seconds)
-          case w if w.elapsedTime < 30.seconds =>
-            logger.info(s"${trigger.name}: '$file' is still too young (${w.elapsedTime} msec)")
-            setTimeout(() => ensureCompleteFile(trigger, file), 7.5.seconds)
-          case _ =>
-            queueForProcessing(trigger, file, stats.size)
+          case None =>
+          // No jobs found
         }
-      case Failure(e) =>
-        logger.info(s"${trigger.name}: Failed to stat '$file'")
-      // TODO retry up to N times?
+      }
     }
   }
 
-  private def queueForProcessing(trigger: Trigger, file: String, fileSize: Double) = {
-    for {
-      triggerName <- trigger.name
-      workFile <- config.workFile(file)
-      workflowName <- trigger.workflowName
-    } {
-      logger.info(s"$triggerName: Queuing '$file' (workflow $workflowName)")
-      val outcome = jobDAO.createJob(new Job(name = file.baseFile(), input = file, inputSize = fileSize, workflowName = workflowName))
-      outcome onComplete {
-        case Success(job) =>
-          logger.info(s"$triggerName: Created job ${job._id} (${job.workflowName}) for file '$file'...")
-          job.info(s"File '$workFile' is queued for processing...")
-          trackJob(file, job)
-        case Failure(e) =>
-          logger.error(s"Failed to move '$file' to '${config.workDirectory}': ${e.getMessage}", e)
-        // TODO retry up to N times?
-      }
+  private def prepareJobForProcessing(job: Job) = {
+    val outcome = for {
+      _ <- job.changeState(JobStates.QUEUED)
+      workflow <- loadWorkflow(job)
+      _ <- job.changeState(JobStates.RUNNING)
+      statistics <- compileAndRunWorkflow(workflow)(job)
+      _ <- job.changeState(JobStates.SUCCESS)
+    } yield statistics
+
+    outcome onComplete {
+      case Success(stats) =>
+        job.info(s"File '${job.input}' completed successfully")
+        job.info(s"$stats")
+
+      case Failure(e) =>
+        job.error(s"File '${job.input}' failed")
+        job.error(s"${e.getMessage}", e)
+        job.changeState(JobStates.STOPPED, e.getMessage)
     }
+    outcome
   }
 
   /**
@@ -195,16 +149,22 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
   private def runWorkflow(workflow: Workflow)(implicit job: Job): Future[Statistics] = {
     val args = for {
       inputDevice <- DeviceFactory.getInputDevice(workflow.input)
-      outputDevices = workflow.outputs.flatMap { source =>
+      outputDeviceAttempts = workflow.outputs map { source =>
         source.path = ExpressionEvaluator.evaluate(source.path)
-        DeviceFactory.getOutputDevice(source)
+        source.name -> DeviceFactory.getOutputDevice(source)
       }
-    } yield (inputDevice, outputDevices)
+    } yield (inputDevice, outputDeviceAttempts)
 
     args match {
-      case Some((inputDevice, outputDevices)) => runETL(inputDevice, outputDevices)
-      case None =>
-        Future.failed(js.JavaScriptException("The process could not be initialized"))
+      case Success((inputDevice, outputDeviceAttempts)) =>
+        val outputDevices = outputDeviceAttempts map {
+          case (_, Success(device)) => device
+          case (name, Failure(e)) =>
+            throw js.JavaScriptException(s"Failed to initialize device '$name'", e)
+        }
+        runETL(inputDevice, outputDevices)
+      case Failure(e) =>
+        Future.failed(js.JavaScriptException("The process could not be initialized", e))
     }
   }
 
@@ -215,51 +175,51 @@ class JobProcessor()(implicit config: WorkerConfig, jobDAO: JobClient, workflowD
     * @return a promise of the [[Statistics statistics]]
     */
   private def runETL(inputDevice: InputDevice, outputDevices: Seq[OutputDevice])(implicit job: Job): Future[Statistics] = {
-    // create a new the statistics generator instance
+    // setup statistics generation (every 5 seconds)
     implicit val statsGen = new StatisticsGenerator()
+    val interval = setInterval(() => updateStatistics(), 5.seconds)
 
-    // create and register the event handler
-    // then start reading from the input device
-    inputDevice.start(registerEventHandler(job, new JobEventHandler {
-
-      override def onData(data: js.Any): Unit = {
-        // update the statistics
-        statsGen.totalRead += 1
-        statsGen.update() foreach { statistics =>
-          job.info(statistics.toString)
-          job.statistics = statistics.toModel
-          for {
-            _id <- job._id
-            statistics <- job.statistics
-          } jobDAO.updateStatistics(_id, statistics)
-        }
-
-        // write the data to all output devices
-        outputDevices foreach (_.write(data))
-      }
-
-      override def onError(err: Error): Unit = {
-        statsGen.failures += 1
-        job.error(err.message, err)
-      }
-
-      override def onFinish(data: js.Any): Future[Unit] = {
-        job.info(s"Closing all devices...")
-        for {
-          _ <- jobDAO.updateJob(job)
-          _ <- Future.sequence(outputDevices.map(_.flush())).map(_.sum)
-          _ <- inputDevice.close()
-          _ <- Future.sequence(outputDevices.map(_.close()))
-        } yield ()
-      }
-
+    registerJobController(job, new JobControlSupport {
       override def pause(): Future[Boolean] = inputDevice.pause()
 
       override def resume(): Future[Boolean] = inputDevice.resume()
 
       override def stop(): Future[Boolean] = inputDevice.stop()
+    })
 
-    }))
+    // start reading from the input device
+    inputDevice.start(new JobEventHandler {
+      override def onData(data: js.Any): Unit = {
+        statsGen.totalRead += 1
+        outputDevices foreach (_.write(data)(this))
+      }
+
+      override def onError(error: Error): Unit = {
+        statsGen.failures += 1
+        job.error(JSON.stringify(error, null, 4), error)
+      }
+
+      override def onFinish(data: js.Any): Future[Unit] = {
+        job.info("Closing all devices...")
+        interval.clear()
+        for {
+          _ <- Future.sequence(outputDevices.map(_.flush()(this))).map(_.sum)
+          _ <- inputDevice.close()
+          _ <- Future.sequence(outputDevices.map(_.close()))
+        } yield updateStatistics()
+      }
+    })
+  }
+
+  /**
+    * Updates the statistics for the underlying devices corresponding to the given job
+    * @param job      the given [[Job job]]
+    * @param statsGen the given [[StatisticsGenerator statistics generator]]
+    */
+  private def updateStatistics()(implicit job: Job, statsGen: StatisticsGenerator) = {
+    val statistics = statsGen.update()
+    job.info(statistics.toString)
+    job._id.foreach(jobDAO.updateStatistics(_, statistics.toModel))
   }
 
 }
@@ -302,9 +262,7 @@ object JobProcessor {
       val task0 = jobDAO.changeState(job._id.orDie("No Job ID"), state)
 
       // display the message if set
-      if (message != null) {
-        logger.error(message)
-      }
+      if (message != null) logger.error(message)
 
       info(s"Moving '${job.input}' from ${job.state} to $state...")
       val task = stateFileMapping.get(state) match {
@@ -342,13 +300,6 @@ object JobProcessor {
       pctComplete = statistics.complete_%,
       completionTime = statistics.completionTime
     )
-
-  }
-
-  final implicit class FileExtensions(val file: String) extends AnyVal {
-
-    @inline
-    def baseFile(): js.UndefOr[String] = Path.parse(file).base
 
   }
 

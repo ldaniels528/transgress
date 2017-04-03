@@ -2,48 +2,34 @@ package com.github.ldaniels528.bourne.client
 package controllers
 
 import com.github.ldaniels528.bourne.AppConstants._
-import com.github.ldaniels528.bourne.RemoteEvent._
-import com.github.ldaniels528.bourne.client.models.{Expandable, Job}
-import com.github.ldaniels528.bourne.client.services.JobService
-import com.github.ldaniels528.bourne.models.JobStates._
-import io.scalajs.dom.Event
+import com.github.ldaniels528.bourne.client.models.{Job, Slave}
+import com.github.ldaniels528.bourne.client.services.{JobService, SlaveService}
 import io.scalajs.dom.html.browser.console
+import io.scalajs.npm.angularjs.AngularJsHelper._
 import io.scalajs.npm.angularjs._
 import io.scalajs.npm.angularjs.toaster.Toaster
 import io.scalajs.util.DurationHelper._
-import io.scalajs.util.JsUnderOrHelper._
 
 import scala.concurrent.duration._
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.scalajs.js
-import scala.scalajs.js.annotation.ScalaJSDefined
+import scala.scalajs.js.JSConverters._
+import scala.util.{Failure, Success}
 
 /**
   * Main Controller
   * @author lawrence.daniels@gmail.com
   */
 case class MainController($scope: MainScope, $interval: Interval, $location: Location, toaster: Toaster,
-                          @injected("JobService") jobService: JobService)
-  extends Controller with JobHandling {
+                          @injected("JobService") jobService: JobService,
+                          @injected("SlaveService") slaveService: SlaveService)
+  extends Controller with CollapseExpandHandling with JobHandling with SlaveHandling with TabHandling {
 
   /////////////////////////////////////////////////////////
-  //    Variables
+  //    Initialization
   /////////////////////////////////////////////////////////
 
   $scope.version = String.valueOf(Version)
-
-  $scope.jobs = js.Array()
-
-  $scope.tabs = js.Array(
-    new AppTab(name = "Activity", uri = "/activity", icon = "fa-tasks"),
-    new AppTab(name = "Dashboard", uri = "/dashboard", icon = "fa-stack-overflow"),
-    new AppTab(name = "Slaves", uri = "/slaves", icon = "fa-android"),
-    new AppTab(name = "Triggers", uri = "/triggers", icon = "fa-cogs"),
-    new AppTab(name = "Workflows", uri = "/workflows", icon = "fa-th-large")
-  )
-
-  // the first tab is active
-  $scope.selectedTab = $scope.tabs(0)
 
   /////////////////////////////////////////////////////////
   //    Public Methods
@@ -56,71 +42,98 @@ case class MainController($scope: MainScope, $interval: Interval, $location: Loc
     console.info(s"Initializing ${getClass.getSimpleName}...")
 
     // get the list of jobs now
-    refreshJobs()
+    $scope.refreshJobs(js.undefined)
+    $scope.refreshSlaves()
 
     // and update them every 3 minutes
-    $interval(() => refreshJobs(), 3.minute)
+    $interval(() => $scope.refreshJobs(js.undefined), 3.minute)
   }
 
-  /////////////////////////////////////////////////////////
-  //    Public Methods
-  /////////////////////////////////////////////////////////
-
-  $scope.changeTab = (aTab: js.UndefOr[AppTab]) => aTab foreach { tab =>
-    $scope.selectedTab = tab
-    $location.url(tab.uri)
+  $scope.getSlaveJobs = (aSlave: js.UndefOr[Slave]) => {
+    for {
+      slave <- aSlave
+      slaveID <- slave._id
+    } yield $scope.jobs.filter(_.slaveID == slaveID)
   }
 
-  $scope.collapseExpand = (anExpandable: js.UndefOr[Expandable]) => anExpandable foreach { expandable =>
-    expandable.expanded = !expandable.expanded.isTrue
+  private def getSlaveForJob(job: Job) = {
+    $scope.slaves.find(_._id == job.slaveID)
   }
 
   /**
-    * Returns a colored bulb based on the status of the given job
+    * Pauses the given job
     */
-  $scope.getStatusBulb = (aJob: js.UndefOr[Job]) => aJob flatMap { job =>
-    job.state flatMap {
-      case NEW => "images/statuses/offlight.png"
-      case CLAIMED => "images/statuses/bluelight.png"
-      case PAUSED => "images/statuses/yellowlight.gif"
-      case QUEUED => "images/statuses/bluelight.png"
-      case RUNNING => "images/statuses/loading16.gif"
-      case STOPPED => "images/statuses/redlight.png"
-      case SUCCESS => "images/statuses/greenlight.png"
-      case _ => js.undefined
+  $scope.pauseJob = (aJob: js.UndefOr[Job]) => {
+    for {
+      job <- aJob
+      jobId <- job._id
+      slave <- getSlaveForJob(job).orUndefined
+      slaveId <- slave._id
+    } {
+      $scope.pausing = true
+      jobService.pauseJob(jobId, slaveId).toFuture onComplete {
+        case Success(response) =>
+          $scope.$apply { () =>
+            $scope.pausing = false
+            $scope.updateJob($scope.jobs, response.data)
+          }
+        case Failure(e) =>
+          $scope.pausing = false
+          toaster.error("Failed to pause job")
+          console.error(s"Failed to pause job: ${e.displayMessage}")
+      }
     }
   }
 
   /**
-    * Returns a class representing the status of the given job
+    * Resumes the given job
     */
-  $scope.getStatusClass = (aJob: js.UndefOr[Job]) => aJob flatMap { job =>
-    job.state flatMap {
-      case NEW => "status_new"
-      case CLAIMED => "status_claimed"
-      case PAUSED => "status_paused"
-      case QUEUED => "status_queued"
-      case RUNNING => "status_running"
-      case STOPPED => "status_stopped"
-      case SUCCESS => "status_success"
-      case _ => js.undefined
+  $scope.resumeJob = (aJob: js.UndefOr[Job]) => {
+    for {
+      job <- aJob
+      jobId <- job._id
+      slave <- getSlaveForJob(job).orUndefined
+      slaveId <- slave._id
+    } {
+      $scope.resuming = true
+      jobService.resumeJob(jobId, slaveId).toFuture onComplete {
+        case Success(response) =>
+          $scope.$apply { () =>
+            $scope.resuming = false
+            $scope.updateJob($scope.jobs, response.data)
+          }
+        case Failure(e) =>
+          $scope.resuming = false
+          toaster.error("Failed to resume job")
+          console.error(s"Failed to resume job: ${e.displayMessage}")
+      }
     }
   }
 
-  $scope.isRunning = (aJob: js.UndefOr[Job]) => aJob exists (_.state.contains(RUNNING))
-
   /**
-    * Selects a job
+    * Stops the given job
     */
-  $scope.selectJob = (aJob: js.UndefOr[Job]) => {
-    $scope.selectedJob = aJob.flat
+  $scope.stopJob = (aJob: js.UndefOr[Job]) => {
+    for {
+      job <- aJob
+      jobId <- job._id
+      slave <- getSlaveForJob(job).orUndefined
+      slaveId <- slave._id
+    } {
+      $scope.stopping = true
+      jobService.stopJob(jobId, slaveId).toFuture onComplete {
+        case Success(response) =>
+          $scope.$apply { () =>
+            $scope.stopping = false
+            $scope.updateJob($scope.jobs, response.data)
+          }
+        case Failure(e) =>
+          $scope.stopping = false
+          toaster.error("Failed to stop job")
+          console.error(s"Failed to stop job: ${e.displayMessage}")
+      }
+    }
   }
-
-  /////////////////////////////////////////////////////////
-  //    Event Handlers
-  /////////////////////////////////////////////////////////
-
-  $scope.$on(JOB_UPDATE, (_: Event, job: Job) => $scope.$apply(() => updateJob($scope.jobs, job)))
 
 }
 
@@ -129,28 +142,18 @@ case class MainController($scope: MainScope, $interval: Interval, $location: Loc
   * @author lawrence.daniels@gmail.com
   */
 @js.native
-trait MainScope extends JobHandlingScope {
+trait MainScope extends Scope
+  with CollapseExpandHandlingScope with JobHandlingScope with SlaveHandlingScope with TabHandlingScope {
+
   // variables
-  var tabs: js.Array[AppTab] = js.native
-  var selectedJob: js.UndefOr[Job] = js.native
-  var selectedTab: AppTab = js.native
   var version: String = js.native
 
   // functions
   var init: js.Function0[Unit] = js.native
-  var changeTab: js.Function1[js.UndefOr[AppTab], Unit] = js.native
-  var collapseExpand: js.Function1[js.UndefOr[Expandable], Unit] = js.native
-  var getStatusBulb: js.Function1[js.UndefOr[Job], js.UndefOr[String]] = js.native
-  var getStatusClass: js.Function1[js.UndefOr[Job], js.UndefOr[String]] = js.native
-  var isRunning: js.Function1[js.UndefOr[Job], Boolean] = js.native
-  var selectJob: js.Function1[js.UndefOr[Job], Unit] = js.native
+  var getSlaveJobs: js.Function1[js.UndefOr[Slave], js.UndefOr[js.Array[Job]]] = js.native
+  var pauseJob: js.Function1[js.UndefOr[Job], Unit] = js.native
+  var resumeJob: js.Function1[js.UndefOr[Job], Unit] = js.native
+  var stopJob: js.Function1[js.UndefOr[Job], Unit] = js.native
 
 }
 
-/**
-  * Represents a tab
-  * @param name the name of the tab
-  * @param icon the icon of the tab
-  */
-@ScalaJSDefined
-class AppTab(val name: String, val uri: String, val icon: String) extends js.Object
