@@ -1,6 +1,7 @@
 package com.github.ldaniels528.bourne.client
 package models
 
+import com.github.ldaniels528.bourne.models.JobStates._
 import com.github.ldaniels528.bourne.models.{JobLike, StatisticsLike}
 
 import scala.scalajs.js
@@ -23,3 +24,18 @@ class Job(var _id: js.UndefOr[String] = js.undefined,
           var processingHost: js.UndefOr[String] = js.undefined,
           var statistics: js.UndefOr[StatisticsLike] = js.undefined)
   extends JobLike with Expandable
+
+/**
+  * Job Companion
+  * @author lawrence.daniels@gmail.com
+  */
+object Job {
+
+  implicit class JobExtensions(val job: Job) extends AnyVal {
+
+    @inline
+    def isUnfinished: Boolean = job.state.exists(!_.contains(SUCCESS))
+
+  }
+
+}

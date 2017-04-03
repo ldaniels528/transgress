@@ -12,6 +12,7 @@ import scala.scalajs.js.annotation.ScalaJSDefined
   */
 @ScalaJSDefined
 class Slave(var _id: js.UndefOr[String] = js.undefined,
+            var name: js.UndefOr[String] = js.undefined,
             var host: UndefOr[String] = js.undefined,
             var port: UndefOr[String] = js.undefined,
             var maxConcurrency: js.UndefOr[Int] = js.undefined,

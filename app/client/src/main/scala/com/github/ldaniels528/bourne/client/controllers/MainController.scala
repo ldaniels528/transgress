@@ -49,15 +49,15 @@ case class MainController($scope: MainScope, $interval: Interval, $location: Loc
     $interval(() => $scope.refreshJobs(js.undefined), 3.minute)
   }
 
+  $scope.getSlaveForJob = (aJob: js.UndefOr[Job]) => aJob flatMap { job =>
+    $scope.slaves.find(_._id == job.slaveID).orUndefined
+  }
+
   $scope.getSlaveJobs = (aSlave: js.UndefOr[Slave]) => {
     for {
       slave <- aSlave
       slaveID <- slave._id
-    } yield $scope.jobs.filter(_.slaveID == slaveID)
-  }
-
-  private def getSlaveForJob(job: Job) = {
-    $scope.slaves.find(_._id == job.slaveID)
+    } yield $scope.jobs.filter(job => job.slaveID.contains(slaveID) && job.isUnfinished)
   }
 
   /**
@@ -67,7 +67,7 @@ case class MainController($scope: MainScope, $interval: Interval, $location: Loc
     for {
       job <- aJob
       jobId <- job._id
-      slave <- getSlaveForJob(job).orUndefined
+      slave <- $scope.getSlaveForJob(job)
       slaveId <- slave._id
     } {
       $scope.pausing = true
@@ -92,7 +92,7 @@ case class MainController($scope: MainScope, $interval: Interval, $location: Loc
     for {
       job <- aJob
       jobId <- job._id
-      slave <- getSlaveForJob(job).orUndefined
+      slave <- $scope.getSlaveForJob(job)
       slaveId <- slave._id
     } {
       $scope.resuming = true
@@ -117,7 +117,7 @@ case class MainController($scope: MainScope, $interval: Interval, $location: Loc
     for {
       job <- aJob
       jobId <- job._id
-      slave <- getSlaveForJob(job).orUndefined
+      slave <- $scope.getSlaveForJob(job)
       slaveId <- slave._id
     } {
       $scope.stopping = true
@@ -150,6 +150,7 @@ trait MainScope extends Scope
 
   // functions
   var init: js.Function0[Unit] = js.native
+  var getSlaveForJob: js.Function1[js.UndefOr[Job], js.UndefOr[Slave]] = js.native
   var getSlaveJobs: js.Function1[js.UndefOr[Slave], js.UndefOr[js.Array[Job]]] = js.native
   var pauseJob: js.Function1[js.UndefOr[Job], Unit] = js.native
   var resumeJob: js.Function1[js.UndefOr[Job], Unit] = js.native

@@ -5,8 +5,8 @@
             <div class="row">
                 <div ng-class="selectedJob ? 'col-md-5' : 'col-md-2'" class="bold left">Workflow</div>
                 <div ng-class="selectedJob ? 'col-md-7' : 'col-md-4'" class="bold left">File / Input</div>
-                <div ng-hide="selectedJob" class="col-md-2 bold center">Host</div>
-                <div ng-hide="selectedJob" class="col-md-4 bold center">State</div>
+                <div ng-hide="selectedJob" class="col-md-4 bold center">Host</div>
+                <div ng-hide="selectedJob" class="col-md-2 bold center">State</div>
             </div>
             <div ng-repeat="job in jobs"
                  ng-click="selectJob(job)"
@@ -15,11 +15,14 @@
                     <img ng-src="{{ getJobStatusBulb(job) }}"> {{ job.workflowName }}
                 </div>
                 <div ng-class="selectedJob ? 'col-md-7' : 'col-md-4'">{{ job.name }}</div>
-                <div ng-hide="selectedJob" class="col-md-2">
-                    <span ng-show="job.processingHost">{{ job.processingHost }}</span>
+                <div ng-hide="selectedJob" class="col-md-4">
+                    <span ng-show="job.processingHost">
+                        <span ng-show="getSlaveForJob(job).name">{{ getSlaveForJob(job).name }}</span>
+                        <span ng-hide="getSlaveForJob(job).name">{{ job.processingHost }}</span>
+                    </span>
                     <span ng-hide="job.processingHost" class="null">(UNCLAIMED)</span>
                 </div>
-                <div ng-hide="selectedJob" class="col-md-4">
+                <div ng-hide="selectedJob" class="col-md-2">
                     <span ng-hide="job.message">
                         <span ng-class="getJobStatusClass(job)">{{ job.state }}</span>
                         <span ng-show="isRunning(job) && job.statistics.completionTime">
@@ -47,7 +50,12 @@
                 </tr>
                 <tr>
                     <th>Host</th>
-                    <td>{{ selectedJob.processingHost }}</td>
+                    <td>
+                        <span ng-show="getSlaveForJob(selectedJob).name">
+                            {{ getSlaveForJob(selectedJob).name }} (<span class="small">{{ selectedJob.processingHost }}</span>)
+                        </span>
+                        <span ng-hide="getSlaveForJob(selectedJob).name">{{ job.processingHost }}</span>
+                    </td>
                 </tr>
                 <tr>
                     <th>State</th>

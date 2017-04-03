@@ -1,4 +1,5 @@
-package com.github.ldaniels528.bourne.client.controllers
+package com.github.ldaniels528.bourne.client
+package controllers
 
 import io.scalajs.dom.html.browser.console
 import io.scalajs.npm.angularjs.{Controller, Scope}
@@ -24,13 +25,13 @@ class SlaveController($scope: SlaveScope) extends Controller {
 
 }
 
-
 /**
   * Slave Scope
   * @author lawrence.daniels@gmail.com
   */
 @js.native
 trait SlaveScope extends Scope with SlaveHandlingScope {
+
   // functions
   var init: js.Function0[Unit] = js.native
 

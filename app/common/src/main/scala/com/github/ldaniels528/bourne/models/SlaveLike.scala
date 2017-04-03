@@ -10,6 +10,8 @@ import scala.scalajs.js.annotation.ScalaJSDefined
 @ScalaJSDefined
 trait SlaveLike extends js.Object {
 
+  def name: js.UndefOr[String]
+
   def host: js.UndefOr[String]
 
   def port: js.UndefOr[String]

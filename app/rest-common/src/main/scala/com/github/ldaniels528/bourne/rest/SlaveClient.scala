@@ -21,6 +21,7 @@ class SlaveClient(endpoint: String) extends AbstractRestClient(endpoint) {
 
 @ScalaJSDefined
 class Slave(val _id: js.UndefOr[String] = js.undefined,
+            val name: js.UndefOr[String] = js.undefined,
             val host: js.UndefOr[String],
             val port: js.UndefOr[String],
             val maxConcurrency: js.UndefOr[Int],

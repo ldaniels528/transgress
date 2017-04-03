@@ -36,11 +36,27 @@ object SlaveDAO {
     def upsertSlave(data: SlaveData): js.Promise[FindAndModifyWriteOpResult] = {
       dao.findOneAndUpdate(
         filter = doc("host" -> data.host, "port" -> data.port),
-        update = doc($set(
-          "lastUpdated" -> new js.Date(),
-          "maxConcurrency" -> data.maxConcurrency,
-          "jobs" -> data.concurrency
-        )),
+        update = doc(
+          $set(
+            "concurrency" -> data.concurrency,
+            "lastUpdated" -> new js.Date(),
+            "maxConcurrency" -> data.maxConcurrency
+          )),
+        options = new FindAndUpdateOptions(upsert = true, returnOriginal = false)
+      )
+    }
+
+    @inline
+    def updateSlave(data: SlaveData): js.Promise[FindAndModifyWriteOpResult] = {
+      dao.findOneAndUpdate(
+        filter = doc("host" -> data.host, "port" -> data.port),
+        update = doc(
+          $set(
+            "name" -> data.name,
+            "concurrency" -> data.concurrency,
+            "lastUpdated" -> new js.Date(),
+            "maxConcurrency" -> data.maxConcurrency
+          )),
         options = new FindAndUpdateOptions(upsert = true, returnOriginal = false)
       )
     }
@@ -66,6 +82,7 @@ object SlaveDAO {
   */
 @ScalaJSDefined
 class SlaveData(var _id: js.UndefOr[ObjectID] = js.undefined,
+                var name: js.UndefOr[String] = js.undefined,
                 var host: js.UndefOr[String],
                 var port: js.UndefOr[String],
                 var maxConcurrency: js.UndefOr[Int],

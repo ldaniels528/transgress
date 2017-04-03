@@ -13,7 +13,10 @@
                 <i class="fa clickable" ng-class="slave.expanded ? 'fa-minus-square-o' : 'fa-plus-square-o'" ng-click="collapseExpand(slave)"></i>
                 {{ slave._id }}
             </div>
-            <div class="col-md-6 center">{{ slave.host }}:{{ slave.port }}</div>
+            <div class="col-md-6 center">
+                <span ng-show="slave.name">{{ slave.name }} (<span class="small">{{ slave.host }}:{{ slave.port }}</span>)</span>
+                <span ng-hide="slave.name">{{ slave.host }}:{{ slave.port }}</span>
+            </div>
             <div class="col-md-1 center">{{ slave.concurrency | number }} / {{ slave.maxConcurrency | number }}</div>
             <div class="col-md-1 center">{{ utilization(slave) | number:1 }}%</div>
             <div class="col-md-2 center">{{ slave.lastUpdated | date:'MM/dd/yyyy HH:mm:ss' }}</div>
