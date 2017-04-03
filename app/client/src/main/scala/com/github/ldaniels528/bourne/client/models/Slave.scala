@@ -15,7 +15,11 @@ class Slave(var _id: js.UndefOr[String] = js.undefined,
             var name: js.UndefOr[String] = js.undefined,
             var host: UndefOr[String] = js.undefined,
             var port: UndefOr[String] = js.undefined,
-            var maxConcurrency: js.UndefOr[Int] = js.undefined,
             var concurrency: js.UndefOr[Int] = js.undefined,
+            var maxConcurrency: js.UndefOr[Int] = js.undefined,
             var lastUpdated: js.UndefOr[js.Date] = js.undefined)
-  extends SlaveLike with Expandable
+  extends SlaveLike with Expandable {
+
+  var jobs: js.UndefOr[js.Array[Job]] = js.undefined
+
+}

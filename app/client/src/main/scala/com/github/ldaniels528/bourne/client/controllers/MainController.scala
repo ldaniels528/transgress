@@ -2,13 +2,18 @@ package com.github.ldaniels528.bourne.client
 package controllers
 
 import com.github.ldaniels528.bourne.AppConstants._
+import com.github.ldaniels528.bourne.RemoteEvent.{JOB_UPDATE, SLAVE_UPDATE}
 import com.github.ldaniels528.bourne.client.models.{Job, Slave}
 import com.github.ldaniels528.bourne.client.services.{JobService, SlaveService}
+import com.github.ldaniels528.bourne.models.JobStates
+import com.github.ldaniels528.bourne.models.JobStates.JobState
+import io.scalajs.dom.Event
 import io.scalajs.dom.html.browser.console
 import io.scalajs.npm.angularjs.AngularJsHelper._
 import io.scalajs.npm.angularjs._
 import io.scalajs.npm.angularjs.toaster.Toaster
 import io.scalajs.util.DurationHelper._
+import io.scalajs.util.JsUnderOrHelper._
 
 import scala.concurrent.duration._
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
@@ -41,23 +46,38 @@ case class MainController($scope: MainScope, $interval: Interval, $location: Loc
   $scope.init = () => {
     console.info(s"Initializing ${getClass.getSimpleName}...")
 
-    // get the list of jobs now
-    $scope.refreshJobs(js.undefined)
-    $scope.refreshSlaves()
+    // get the list of jobs and slaves
+    val startTime = js.Date.now()
+    val outcome = for {
+      slaves <- slaveService.getSlaves().toFuture.map(_.data)
+      jobs <- jobService.getJobs().toFuture.map(_.data)
+    } yield (slaves, jobs)
+
+    outcome onComplete {
+      case Success((slaves, jobs)) =>
+        console.log(s"Loaded slaves and jobs in ${js.Date.now() - startTime} msecs...")
+        $scope.$apply { () =>
+          $scope.slaves = slaves
+          $scope.jobs = jobs
+
+          slaves foreach { slave =>
+            slave.jobs = jobs.filter(_.slaveID ?== slave._id)
+          }
+        }
+      case Failure(e) =>
+        console.log(s"Failed to retrieve slaves and jobs: ${e.getMessage}")
+        e.printStackTrace()
+    }
 
     // and update them every 3 minutes
     $interval(() => $scope.refreshJobs(js.undefined), 3.minute)
   }
 
+  /**
+    * Retrieves the corresponding slave for the given job
+    */
   $scope.getSlaveForJob = (aJob: js.UndefOr[Job]) => aJob flatMap { job =>
-    $scope.slaves.find(_._id == job.slaveID).orUndefined
-  }
-
-  $scope.getSlaveJobs = (aSlave: js.UndefOr[Slave]) => {
-    for {
-      slave <- aSlave
-      slaveID <- slave._id
-    } yield $scope.jobs.filter(job => job.slaveID.contains(slaveID) && job.isUnfinished)
+    $scope.slaves.find(_._id ?== job.slaveID).orUndefined
   }
 
   /**
@@ -82,6 +102,33 @@ case class MainController($scope: MainScope, $interval: Interval, $location: Loc
           toaster.error("Failed to pause job")
           console.error(s"Failed to pause job: ${e.displayMessage}")
       }
+    }
+  }
+
+  $scope.refreshJobs = (aJobStates: js.UndefOr[js.Array[JobState]]) => {
+    val jobStates = aJobStates getOrElse JobStates.values.toJSArray
+    jobService.getJobs(jobStates: _*).toFuture onComplete {
+      case Success(response) =>
+        $scope.$apply { () =>
+          response.data foreach { job =>
+            $scope.updateJob($scope.jobs, job)
+            updateSlaveJobs(job)
+          }
+        }
+      case Failure(e) =>
+        console.error(e.displayMessage)
+    }
+  }
+
+  $scope.refreshSlaves = () => {
+    slaveService.getSlaves().toFuture onComplete {
+      case Success(response) =>
+        $scope.$apply { () =>
+          $scope.slaves = response.data
+        }
+      case Failure(e) =>
+        toaster.error("Error loading slave")
+        console.error(s"Error loading slave: ${e.displayMessage}")
     }
   }
 
@@ -135,6 +182,33 @@ case class MainController($scope: MainScope, $interval: Interval, $location: Loc
     }
   }
 
+  /////////////////////////////////////////////////////////
+  //    Private Methods
+  /////////////////////////////////////////////////////////
+
+  def updateSlaveJobs(job: Job) {
+    $scope.getSlaveForJob(job) foreach { slave =>
+      if (slave.jobs.isEmpty) slave.jobs = new js.Array[Job]()
+      $scope.updateJob(slave.jobs, job)
+    }
+  }
+
+  /////////////////////////////////////////////////////////
+  //    Event Listeners
+  /////////////////////////////////////////////////////////
+
+  $scope.$on(JOB_UPDATE, (_: Event, job: Job) => {
+    $scope.$apply { () =>
+      $scope.updateJob($scope.jobs, job)
+      updateSlaveJobs(job)
+    }
+  })
+
+  $scope.$on(SLAVE_UPDATE, (_: Event, slave: Slave) => {
+    $scope.$apply(() => $scope.updateSlave($scope.slaves, slave))
+  })
+
+
 }
 
 /**
@@ -151,8 +225,9 @@ trait MainScope extends Scope
   // functions
   var init: js.Function0[Unit] = js.native
   var getSlaveForJob: js.Function1[js.UndefOr[Job], js.UndefOr[Slave]] = js.native
-  var getSlaveJobs: js.Function1[js.UndefOr[Slave], js.UndefOr[js.Array[Job]]] = js.native
   var pauseJob: js.Function1[js.UndefOr[Job], Unit] = js.native
+  var refreshJobs: js.Function1[js.UndefOr[js.Array[JobState]], Unit] = js.native
+  var refreshSlaves: js.Function0[Unit] = js.native
   var resumeJob: js.Function1[js.UndefOr[Job], Unit] = js.native
   var stopJob: js.Function1[js.UndefOr[Job], Unit] = js.native
 

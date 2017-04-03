@@ -22,7 +22,7 @@
             <div class="col-md-2 center">{{ slave.lastUpdated | date:'MM/dd/yyyy HH:mm:ss' }}</div>
 
             <!-- Slave's activity -->
-            <div class="col-md-12 slave_border" ng-show="slave.expanded">
+            <div class="col-md-12 slave_border" ng-show="slave.expanded && slave.jobs.length">
                 <table class="col-md-12">
                     <tr>
                         <th class="stats">File</th>
@@ -33,7 +33,7 @@
                         <th class="stats">Bytes/sec</th>
                         <th class="stats">ETC</th>
                     </tr>
-                    <tr ng-repeat="job in getSlaveJobs(slave)"
+                    <tr ng-repeat="job in slave.jobs"
                         ng-click="selectJob(job)"
                         ng-class="selectedJob == job ? 'highlight' : ''"
                         class="clickable">

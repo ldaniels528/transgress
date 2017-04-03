@@ -1,21 +1,14 @@
 package com.github.ldaniels528.bourne.client.controllers
 
-import com.github.ldaniels528.bourne.RemoteEvent.JOB_UPDATE
 import com.github.ldaniels528.bourne.client.models.Job
 import com.github.ldaniels528.bourne.client.services.JobService
 import com.github.ldaniels528.bourne.models.JobStates
 import com.github.ldaniels528.bourne.models.JobStates._
-import io.scalajs.dom.Event
-import io.scalajs.dom.html.browser.console
-import io.scalajs.npm.angularjs.AngularJsHelper._
 import io.scalajs.npm.angularjs.toaster.Toaster
 import io.scalajs.npm.angularjs.{Controller, Scope}
 import io.scalajs.util.JsUnderOrHelper._
 
-import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.scalajs.js
-import scala.scalajs.js.JSConverters._
-import scala.util.{Failure, Success}
 
 /**
   * Job Handling
@@ -98,24 +91,12 @@ trait JobHandling {
     $scope.selectedJob = aJob.flat
   }
 
-  $scope.refreshJobs = (aJobStates: js.UndefOr[js.Array[JobState]]) => {
-    val jobStates = aJobStates getOrElse JobStates.values.toJSArray
-    jobService.getJobs(jobStates: _*).toFuture onComplete {
-      case Success(response) =>
-        $scope.$apply(() => {
-          response.data.foreach(job => $scope.updateJob($scope.jobs, job))
-        })
-      case Failure(e) =>
-        console.error(e.displayMessage)
-    }
-  }
-
   $scope.updateJob = (aJobs: js.UndefOr[js.Array[Job]], aJob: js.UndefOr[Job]) => {
     for {
       jobs <- aJobs
       job <- aJob
     } {
-      jobs.indexWhere(_._id == job._id) match {
+      jobs.indexWhere(_._id ?== job._id) match {
         case -1 => jobs.push(job)
         case index =>
           val theJob = jobs(index)
@@ -127,14 +108,6 @@ trait JobHandling {
   }
 
   private def isJobOperation = $scope.pausing.isTrue || $scope.resuming.isTrue || $scope.stopping.isTrue
-
-  /////////////////////////////////////////////////////////
-  //    Event Listeners
-  /////////////////////////////////////////////////////////
-
-  $scope.$on(JOB_UPDATE, (_: Event, job: Job) => {
-    $scope.$apply(() => $scope.updateJob($scope.jobs, job))
-  })
 
 }
 
@@ -161,7 +134,6 @@ trait JobHandlingScope extends js.Any {
   var isResumable: js.Function1[js.UndefOr[Job], Boolean] = js.native
   var isRunning: js.Function1[js.UndefOr[Job], Boolean] = js.native
   var isStoppable: js.Function1[js.UndefOr[Job], Boolean] = js.native
-  var refreshJobs: js.Function1[js.UndefOr[js.Array[JobState]], Unit] = js.native
   var selectJob: js.Function1[js.UndefOr[Job], Unit] = js.native
   var updateJob: js.Function2[js.UndefOr[js.Array[Job]], js.UndefOr[Job], Unit] = js.native
 
