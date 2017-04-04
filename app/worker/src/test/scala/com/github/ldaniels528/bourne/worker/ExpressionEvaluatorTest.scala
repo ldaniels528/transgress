@@ -1,4 +1,4 @@
-package com.github.ldaniels528.bourne.worker
+package com.github.ldaniels528.transgress.worker
 
 import org.scalatest.FunSpec
 
