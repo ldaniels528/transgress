@@ -3,7 +3,7 @@ package com.github.ldaniels528.transgress.watcher
 import com.github.ldaniels528.transgress.AppConstants.Version
 import com.github.ldaniels528.transgress.EnvironmentHelper._
 import com.github.ldaniels528.transgress.LoggerFactory
-import com.github.ldaniels528.transgress.rest.JobClient
+import com.github.ldaniels528.transgress.rest.{FeedClient, JobClient}
 import io.scalajs.nodejs.{process, setInterval}
 import io.scalajs.util.DurationHelper._
 import io.scalajs.util.OptionHelper._
@@ -35,6 +35,7 @@ object Watcher extends js.JSApp {
 
     // initialize the job & workflow clients
     val master = config.master.getOrElse(process.master getOrElse "localhost:9000")
+    implicit val feedClient = new FeedClient(master)
     implicit val jobClient = new JobClient(master)
 
     // start the feed processor

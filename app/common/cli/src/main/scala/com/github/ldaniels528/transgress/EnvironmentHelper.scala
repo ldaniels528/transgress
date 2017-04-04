@@ -1,7 +1,7 @@
 package com.github.ldaniels528.transgress
 
-import io.scalajs.util.OptionHelper._
 import io.scalajs.nodejs.Process
+import io.scalajs.util.OptionHelper._
 
 /**
   * Environment Helper
@@ -18,7 +18,7 @@ object EnvironmentHelper {
     * Process configuration extensions
     * @param process the given [[Process process]]
     */
-  implicit class ProcessConfigExtensions(val process: Process) extends AnyVal {
+  final implicit class ProcessConfigExtensions(val process: Process) extends AnyVal {
 
     @inline
     def awsAccessKeyID: String = {

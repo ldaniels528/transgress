@@ -1,11 +1,12 @@
 package com.github.ldaniels528.transgress.rest
 
 import com.github.ldaniels528.transgress.models.JobStates.JobState
-import com.github.ldaniels528.transgress.models.{StatisticsLike, StatusMessage}
+import com.github.ldaniels528.transgress.models.{JobLike, JobStates, StatisticsLike, StatusMessage}
 import io.scalajs.npm.request.RequestOptions
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.scalajs.js
+import scala.scalajs.js.annotation.ScalaJSDefined
 
 /**
   * Job REST Client
@@ -42,3 +43,20 @@ class JobClient(endpoint: String) extends AbstractRestClient(endpoint) {
   }
 
 }
+
+/**
+  * Represents a job model
+  * @author lawrence.daniels@gmail.com
+  */
+@ScalaJSDefined
+class Job(val _id: js.UndefOr[String] = js.undefined,
+          val name: js.UndefOr[String],
+          var input: js.UndefOr[String],
+          var inputSize: js.UndefOr[Double],
+          var state: js.UndefOr[String] = JobStates.NEW,
+          var workflowName: js.UndefOr[String],
+          var processingHost: js.UndefOr[String] = js.undefined,
+          var slaveID: js.UndefOr[String] = js.undefined,
+          var lastUpdated: js.UndefOr[Double] = js.Date.now(),
+          var message: js.UndefOr[String] = js.undefined,
+          var statistics: js.UndefOr[StatisticsLike] = js.undefined) extends JobLike

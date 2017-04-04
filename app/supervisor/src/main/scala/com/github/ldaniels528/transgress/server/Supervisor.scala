@@ -102,6 +102,7 @@ object Supervisor extends js.JSApp {
 
     // setup all other routes
     logger.info("Setting up all other routes...")
+    new FeedRoutes(app, db)
     new JobRoutes(app, db)
     new SlaveRoutes(app, db)
     new WorkflowRoutes(app, db)
