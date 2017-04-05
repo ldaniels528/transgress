@@ -1,6 +1,7 @@
 package com.github.ldaniels528.transgress.worker.devices
 
-import com.github.ldaniels528.transgress.worker.{JobEventHandler, Statistics, StatisticsGenerator}
+import com.github.ldaniels528.transgress.worker.models.Statistics
+import com.github.ldaniels528.transgress.worker.{JobEventHandler, StatisticsGenerator}
 
 import scala.concurrent.Future
 

@@ -1,12 +1,12 @@
 {
-  "name": "bourne",
+  "name": "transgress",
   "description": "A distributed file processing system",
-  "main": "bourne-server-fastopt.js",
+  "main": "transgress-supervisor-fastopt.js",
   "authors": [
     "Lawrence Daniels <lawrence.daniels@gmail.com>"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/ldaniels528/bourne.js",
+  "homepage": "https://github.com/ldaniels528/transgress",
   "private": true,
   "ignore": [
     "**/.*",
@@ -29,6 +29,8 @@
     "angular-md5": "^0.1.10",
     "nvd3": "^1.8.5",
     "angular-nvd3": "^1.0.9",
-    "angular-bootstrap": "^2.5.0"
+    "angular-bootstrap": "^2.5.0",
+    "highlightjs": "^9.10.0",
+    "angular-highlightjs": "^0.7.1"
   }
 }

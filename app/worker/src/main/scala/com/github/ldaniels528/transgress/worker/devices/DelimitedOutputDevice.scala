@@ -32,13 +32,15 @@ class DelimitedOutputDevice(out: WriteStream, delimiter: String, columnHeaders: 
     else persistLine(toValuesString(dict))
   }
 
-  private def persistLine(lines: String*)(implicit jobEventHandler: JobEventHandler) {
-    out.write(lines.mkString(OS.EOL), error => {
-      if (isDefined(error)) jobEventHandler.onError(error)
-      else {
-        // TODO write statistics?
-      }
-    })
+  private def persistLine(lines: String*)(implicit jobEventHandler: JobEventHandler): Unit = {
+    lines foreach { line =>
+      out.write(line + OS.EOL, error => {
+        if (isDefined(error)) jobEventHandler.onError(error)
+        else {
+          // TODO write statistics?
+        }
+      })
+    }
   }
 
   private def toValuesString(dict: js.Dictionary[js.Any]) = {

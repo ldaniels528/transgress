@@ -1,13 +1,13 @@
 package com.github.ldaniels528.transgress.worker
 
-import com.github.ldaniels528.transgress.LoggerFactory
 import com.github.ldaniels528.transgress.models.JobStates.JobState
 import com.github.ldaniels528.transgress.models.{JobStates, StatisticsLike, WorkflowLike}
 import com.github.ldaniels528.transgress.rest._
 import com.github.ldaniels528.transgress.worker.JobProcessor._
 import com.github.ldaniels528.transgress.worker.devices._
-import com.github.ldaniels528.transgress.worker.models.Workflow
 import com.github.ldaniels528.transgress.worker.models.Workflow._
+import com.github.ldaniels528.transgress.worker.models.{Statistics, Workflow}
+import com.github.ldaniels528.transgress.{CpuMonitor, LoggerFactory}
 import io.scalajs.JSON
 import io.scalajs.nodejs.fs.Fs
 import io.scalajs.nodejs.path.Path
@@ -29,7 +29,11 @@ import scala.util.{Failure, Success}
 class JobProcessor(slave: Slave)(implicit config: WorkerConfig, jobDAO: JobClient, slaveDAO: SlaveClient, workflowDAO: WorkflowClient, ec: ExecutionContext)
   extends JobFileTracking {
   private val logger = LoggerFactory.getLogger(getClass)
+  private var cpuLoad: Double = _
   private var active = 0
+
+  // setup CPU load/idle monitoring
+  private val cpuInterval = setInterval(() => CpuMonitor.computeLoad().future foreach (this.cpuLoad = _), 1.seconds)
 
   /**
     * Runs the job processor
@@ -64,6 +68,13 @@ class JobProcessor(slave: Slave)(implicit config: WorkerConfig, jobDAO: JobClien
         }
       }
     }
+  }
+
+  /**
+    * Shuts down the processor
+    */
+  def shutdown(): Unit = {
+    cpuInterval.clear()
   }
 
   private def prepareJobForProcessing(job: Job) = {
@@ -219,7 +230,7 @@ class JobProcessor(slave: Slave)(implicit config: WorkerConfig, jobDAO: JobClien
   private def updateStatistics()(implicit job: Job, statsGen: StatisticsGenerator) = {
     val statistics = statsGen.update()
     job.info(statistics.toString)
-    job._id.foreach(jobDAO.updateStatistics(_, statistics.toModel))
+    job._id.foreach(jobDAO.updateStatistics(_, statistics.toModel(cpuLoad)))
   }
 
 }
@@ -291,13 +302,14 @@ object JobProcessor {
   final implicit class JobStatisticsEnrichment(val statistics: Statistics) extends AnyVal {
 
     @inline
-    def toModel = new StatisticsLike(
-      totalInserted = statistics.totalInserted.toInt,
-      bytesRead = statistics.bytesRead.toInt,
+    def toModel(cpuLoad: Double) = new StatisticsLike(
+      cpuLoad = cpuLoad,
+      totalInserted = statistics.totalInserted,
+      bytesRead = statistics.bytesRead,
       bytesPerSecond = statistics.bytesPerSecond,
-      recordsDelta = statistics.recordsDelta.toInt,
+      recordsDelta = statistics.recordsDelta,
       recordsPerSecond = statistics.recordsPerSecond,
-      pctComplete = statistics.complete_%,
+      pctComplete = statistics.pctComplete,
       completionTime = statistics.completionTime
     )
 

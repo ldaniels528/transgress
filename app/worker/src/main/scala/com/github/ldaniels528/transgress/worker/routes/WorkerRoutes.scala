@@ -1,16 +1,19 @@
 package com.github.ldaniels528.transgress.worker.routes
 
+import com.github.ldaniels528.transgress.CpuMonitor
 import com.github.ldaniels528.transgress.models.JobStates
 import com.github.ldaniels528.transgress.rest.JobClient
+import com.github.ldaniels528.transgress.worker.routes.WorkerRoutes.CPUUsage
 import com.github.ldaniels528.transgress.worker.JobFileTracking
 import io.scalajs.npm.express.{Application, Request, Response}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.scalajs.js
+import scala.scalajs.js.annotation.ScalaJSDefined
 import scala.util.{Failure, Success}
 
 /**
-  * Job Routes
+  * Worker Routes
   * @author lawrence.daniels@gmail.com
   */
 class WorkerRoutes(app: Application, jobTracker: JobFileTracking)(implicit jobClient: JobClient, ec: ExecutionContext) {
@@ -18,6 +21,13 @@ class WorkerRoutes(app: Application, jobTracker: JobFileTracking)(implicit jobCl
   ///////////////////////////////////////////////////////////////
   //    Routes
   ///////////////////////////////////////////////////////////////
+
+  app.get("/api/worker/cpu", (request: Request, response: Response, next: NextFunction) => {
+    CpuMonitor.computeLoad().future onComplete {
+      case Success(usage) => response.send(new CPUUsage(usage)); next()
+      case Failure(e) => response.internalServerError(e); next()
+    }
+  })
 
   app.get("/api/worker/job/:id/pause", (request: Request, response: Response, next: NextFunction) => {
     val id = request.params.apply("id")
@@ -76,5 +86,16 @@ class WorkerRoutes(app: Application, jobTracker: JobFileTracking)(implicit jobCl
       case Failure(e) => response.internalServerError(e); next()
     }
   })
+
+}
+
+/**
+  * Worker Routes Companion
+  * @author lawrence.daniels@gmail.com
+  */
+object WorkerRoutes {
+
+  @ScalaJSDefined
+  class CPUUsage(val cpu: Double) extends js.Object
 
 }

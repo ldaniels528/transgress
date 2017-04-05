@@ -1,13 +1,13 @@
 package com.github.ldaniels528.transgress.watcher
 
-import S3DownloadDemo._
+//import S3DownloadDemo._
 import com.github.ldaniels528.transgress.EnvironmentHelper._
 import io.scalajs.JSON
 import io.scalajs.nodejs.fs.Fs
 import io.scalajs.nodejs.path.Path
 import io.scalajs.nodejs.{console, process}
-import io.scalajs.npm.aws._
-import io.scalajs.npm.aws.s3._
+//import io.scalajs.npm.aws._
+//import io.scalajs.npm.aws.s3._
 import io.scalajs.util.JsUnderOrHelper._
 import io.scalajs.util.PromiseHelper.Implicits._
 
@@ -21,7 +21,7 @@ import scala.scalajs.js.annotation.ScalaJSDefined
   * @author lawrence.daniels@gmail.com
   */
 class S3DownloadDemo {
-
+/*
   def run(): Unit = {
     val params = new AppParams(
       filename = "test_data/COMPETITIVE_DEALERS_20170201.csv",
@@ -133,5 +133,5 @@ object S3DownloadDemo {
 
   @ScalaJSDefined
   class DataPath(val data_path: String) extends js.Object
-
+*/
 }

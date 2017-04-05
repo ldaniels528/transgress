@@ -14,6 +14,10 @@ body {
     cursor: pointer;
 }
 
+.completed {
+    color: #51a351;
+}
+
 .error {
     color: #ff0000;
     font-weight: bold;
@@ -35,8 +39,12 @@ body {
     color: #aaaaaa;
 }
 
-.stats {
+.stats_header {
     color: #000080;
+    font-size: 9pt;
+}
+
+.stats {
     font-size: 9pt;
 }
 

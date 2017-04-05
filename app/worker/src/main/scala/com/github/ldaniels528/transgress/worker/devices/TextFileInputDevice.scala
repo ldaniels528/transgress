@@ -1,9 +1,9 @@
 package com.github.ldaniels528.transgress.worker.devices
 
 import com.github.ldaniels528.transgress.LoggerFactory
-import com.github.ldaniels528.transgress.worker.models.Source
+import com.github.ldaniels528.transgress.worker.models.{Source, Statistics}
 import com.github.ldaniels528.transgress.worker.util.LoaderUtilities._
-import com.github.ldaniels528.transgress.worker.{JobEventHandler, Statistics, StatisticsGenerator}
+import com.github.ldaniels528.transgress.worker.{JobEventHandler, StatisticsGenerator}
 import io.scalajs.JSON
 import io.scalajs.nodejs.Error
 import io.scalajs.nodejs.buffer.Buffer

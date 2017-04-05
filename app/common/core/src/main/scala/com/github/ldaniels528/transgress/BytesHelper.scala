@@ -7,7 +7,7 @@ import scala.annotation.tailrec
   * @author lawrence.daniels@gmail.com
   */
 object BytesHelper {
-  private val UnitNames = Seq("Bytes", "KB", "MB", "GB", "TB")
+  private val UnitNames = Seq("Bytes", "KB", "MB", "GB", "TB", "PB")
 
   /**
     * Byte Unit Enrichment

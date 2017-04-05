@@ -56,7 +56,7 @@ class FeedProcessor(config: WatcherConfig)(implicit feedDAO: FeedClient, jobDAO:
         //logger.info(s"feed => ${JSON.stringify(feed)}")
         feed match {
           case f if !f.size.contains(stats.size) | !f.mtime.contains(stats.mtime.getTime()) =>
-            logger.info(s"${trigger.name}: '$file' has changed (size = ${stats.size - f.size.orZero}, mtime = ${stats.mtime.getTime() - f.mtime.orZero})")
+            logger.info(s"${trigger.name}: '$file' has changed (size = ${stats.size - f.size.orZero}, mtime = ${stats.mtime.getTime() - f.mtime.orZero}): f = ${JSON.stringify(f)}")
             setTimeout(() => ensureCompleteFile(trigger, file), 5.seconds)
           case f if f.elapsedTime < 30.seconds =>
             logger.info(s"${trigger.name}: '$file' is still too young (${feed.elapsedTime} msec)")
@@ -66,6 +66,7 @@ class FeedProcessor(config: WatcherConfig)(implicit feedDAO: FeedClient, jobDAO:
         }
       case Failure(e) =>
         logger.info(s"${trigger.name}: Failed to stat '$file'")
+        e.printStackTrace()
       // TODO retry up to N times?
     }
   }

@@ -59,7 +59,9 @@ class AbstractRestClient(endpoint: String) {
   }
 
   private def parseBody[T](body: RequestBody) = {
+    //logger.info(s"body => ${JSON.stringify(body)}")
     body match {
+      case s if s.toString.startsWith("ERROR") => throw js.JavaScriptException(s)
       case s if js.typeOf(s) == "string" => JSON.parseAs[T](body.asInstanceOf[String])
       case o => o.asInstanceOf[T]
     }

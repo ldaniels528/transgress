@@ -18,8 +18,8 @@ object TransgressWebClientJSApp extends js.JSApp {
   @JSExport
   override def main(): Unit = {
     // create the application
-    val module = angular.createModule("bourne",
-      js.Array("ngAnimate", "ngCookies", "ngRoute", "ngSanitize", "nvd3", "angularFileUpload", "toaster", "ui.bootstrap"))
+    val module = angular.createModule("transgress",
+      js.Array("ngAnimate", "ngCookies", "ngRoute", "ngSanitize", "nvd3", "angularFileUpload", "hljs", "toaster", "ui.bootstrap"))
 
     // add the custom filters
     module.filter("duration", Filters.duration)
@@ -52,7 +52,7 @@ object TransgressWebClientJSApp extends js.JSApp {
     })
   }
 
-  private def configureControllers(module: Module) {
+  private def configureControllers(module: Module): Unit = {
     module.controllerOf[ActivityController]("ActivityController")
     module.controllerOf[DashboardController]("DashboardController")
     module.controllerOf[MainController]("MainController")
@@ -65,7 +65,7 @@ object TransgressWebClientJSApp extends js.JSApp {
     //module.factoryOf[UserFactory]("UserFactory")
   }
 
-  private def configureServices(module: Module) {
+  private def configureServices(module: Module): Unit = {
     module.serviceOf[JobService]("JobService")
     module.serviceOf[SlaveService]("SlaveService")
     module.serviceOf[WebSocketService]("WebSocketService")

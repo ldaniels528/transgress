@@ -3,6 +3,7 @@ package controllers
 
 import com.github.ldaniels528.transgress.client.models.Workflow
 import com.github.ldaniels528.transgress.client.services.WorkflowService
+import io.scalajs.JSON
 import io.scalajs.dom.html.browser.console
 import io.scalajs.npm.angularjs.AngularJsHelper._
 import io.scalajs.npm.angularjs.toaster.Toaster
@@ -10,6 +11,7 @@ import io.scalajs.npm.angularjs.{Controller, Scope, injected}
 
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.scalajs.js
+import scala.scalajs.js.JSConverters._
 import scala.util.{Failure, Success}
 
 /**
@@ -17,7 +19,8 @@ import scala.util.{Failure, Success}
   * @author lawrence.daniels@gmail.com
   */
 class WorkflowController($scope: WorkflowScope, toaster: Toaster,
-                         @injected("WorkflowService") workflowService: WorkflowService) extends Controller {
+                         @injected("WorkflowService") workflowService: WorkflowService)
+  extends Controller {
 
   /////////////////////////////////////////////////////////
   //    Variables
@@ -37,6 +40,16 @@ class WorkflowController($scope: WorkflowScope, toaster: Toaster,
     refreshWorkflows()
   }
 
+  /**
+    * Selects a worfkflow
+    */
+  $scope.selectWorkflow = (aWorkflow: js.UndefOr[Workflow]) => $scope.selectedWorkflow = aWorkflow
+
+  /**
+    * Converts an object to JSON
+    */
+  $scope.toJSON = (anObject: js.Any) => JSON.stringify(anObject, null, 4)
+
   /////////////////////////////////////////////////////////
   //    Private Methods
   /////////////////////////////////////////////////////////
@@ -45,8 +58,10 @@ class WorkflowController($scope: WorkflowScope, toaster: Toaster,
     workflowService.getWorkflows.toFuture onComplete {
       case Success(response) =>
         console.log(s"Loaded ${response.data.length} workflow(s)")
-        response.data.foreach(workflow => updateWorkflow($scope.workflows, workflow))
-        $scope.$apply(() => {})
+        $scope.$apply(() => {
+          response.data.foreach(workflow => updateWorkflow($scope.workflows, workflow))
+          $scope.selectedWorkflow = response.data.headOption.orUndefined
+        })
       case Failure(e) =>
         toaster.error("Initialization Error", e.displayMessage)
         console.error(e.displayMessage)
@@ -76,9 +91,12 @@ class WorkflowController($scope: WorkflowScope, toaster: Toaster,
 @js.native
 trait WorkflowScope extends Scope {
   // variables
+  var selectedWorkflow: js.UndefOr[Workflow] = js.native
   var workflows: js.Array[Workflow] = js.native
 
   // functions
   var init: js.Function0[Unit] = js.native
+  var selectWorkflow: js.Function1[js.UndefOr[Workflow], Unit] = js.native
+  var toJSON: js.Function1[js.Any, String] = js.native
 
 }

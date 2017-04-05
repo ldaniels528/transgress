@@ -43,7 +43,7 @@ class FeedRoutes(app: Application with WsRouting, db: Db)(implicit ec: Execution
             next()
         }
       case None =>
-        response.badRequest("'filename' and 'fileSize' are required")
+        response.badRequest("ERROR: 'filename' and 'fileSize' are required")
     }
   })
 

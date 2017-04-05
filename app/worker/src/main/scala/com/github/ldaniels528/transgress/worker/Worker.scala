@@ -1,8 +1,8 @@
 package com.github.ldaniels528.transgress.worker
 
 import com.github.ldaniels528.transgress.AppConstants._
-import com.github.ldaniels528.transgress.LoggerFactory
 import com.github.ldaniels528.transgress.EnvironmentHelper._
+import com.github.ldaniels528.transgress.LoggerFactory
 import com.github.ldaniels528.transgress.StringHelper._
 import com.github.ldaniels528.transgress.rest._
 import com.github.ldaniels528.transgress.worker.routes.{NextFunction, WorkerRoutes}
@@ -38,7 +38,7 @@ object Worker extends js.JSApp {
   def run(): Unit = {
     logger.info(f"Starting the Transgress Worker v$Version%.1f...")
 
-     // capture the start time
+    // capture the start time
     val startTime = js.Date.now()
 
     // load the worker config
@@ -141,12 +141,14 @@ object Worker extends js.JSApp {
 
   private def registerAsSlave(host: String, port: String)(implicit config: WorkerConfig, slaveClient: SlaveClient) = {
     logger.info("Registering as a slave to master...")
-    slaveClient.upsertSlave(new Slave(
-      host = host,
-      port = port,
-      maxConcurrency = config.getMaxConcurrency,
-      concurrency = 0
-    ))
+    for {
+      slave <- slaveClient.upsertSlave(new Slave(
+        host = host,
+        port = port,
+        maxConcurrency = config.getMaxConcurrency,
+        concurrency = 0
+      ))
+    } yield slave
   }
 
   /**

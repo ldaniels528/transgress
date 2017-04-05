@@ -1,6 +1,8 @@
 package com.github.ldaniels528.transgress.server.dao
 
+import com.github.ldaniels528.transgress.LoggerFactory
 import com.github.ldaniels528.transgress.models.FeedLike
+import io.scalajs.JSON
 import io.scalajs.npm.mongodb._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -19,6 +21,7 @@ trait FeedDAO extends GenericDAO[FeedData]
   * @author lawrence.daniels@gmail.com
   */
 object FeedDAO {
+  private val logger = LoggerFactory.getLogger(getClass)
 
   /**
     * Feed DAO enrichment
@@ -32,12 +35,14 @@ object FeedDAO {
         filter = doc("filename" $eq data.filename),
         update = doc(
           $setOnInsert("createdTime" -> data.createdTime),
-          $set(
-            "mtime" -> data.mtime,
-            "size" -> data.size)),
+          $set("mtime" -> data.mtime, "size" -> data.size)
+        ),
         options = new FindAndUpdateOptions(upsert = true, returnOriginal = true)).toFuture flatMap {
         case result if result.value != null => Future.successful(result.value.asInstanceOf[FeedData])
-        case result => Future.failed(js.JavaScriptException(s"Failed to create or update feed '${data.filename}'"))
+        case result if result.isOk => Future.successful(data)
+        case result =>
+          logger.error(s"result => ${JSON.stringify(result)}")
+          Future.failed(js.JavaScriptException(s"ERROR: Failed to create or update feed '${data.filename}'"))
       }
     }
 
