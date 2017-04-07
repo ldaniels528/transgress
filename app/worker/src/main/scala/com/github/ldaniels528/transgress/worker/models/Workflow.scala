@@ -2,7 +2,7 @@ package com.github.ldaniels528.transgress.worker
 package models
 
 import com.github.ldaniels528.transgress.models.{OperationLike, WorkflowLike}
-import com.github.ldaniels528.transgress.worker.models.Source._
+import com.github.ldaniels528.transgress.worker.devices.sources.{Source, SourceFactory}
 import com.github.ldaniels528.transgress.worker.models.Variable._
 import io.scalajs.util.JsUnderOrHelper._
 
@@ -37,11 +37,11 @@ object Workflow {
     def validate: Try[Workflow] = {
       Try {
         val name = workflow.name.orDie("'name' is a required field")
-        val input = workflow.input.map(_.validate match {
+        val input = workflow.input.map(SourceFactory.getSource(_) match {
           case Success(v) => v
           case Failure(e) => throw js.JavaScriptException(e.getMessage)
         }).orDie("No input specified")
-        val outputs = workflow.outputs.map(_.map(_.validate match {
+        val outputs = workflow.outputs.map(_.map(SourceFactory.getSource(_) match {
           case Success(v) => v
           case Failure(e) => throw js.JavaScriptException(e.getMessage)
         })).orDie("No outputs specified")

@@ -6,7 +6,7 @@ import sbt._
 
 val appVersion = "0.1.1"
 val appScalaVersion = "2.12.1"
-val scalaJsIoVersion = "0.4.0-pre3"
+val scalaJsIoVersion = "0.4.0-pre4"
 
 scalacOptions ++= Seq("-deprecation", "-encoding", "UTF-8", "-feature", "-target:jvm-1.8", "-unchecked", "-Ywarn-adapted-args", "-Ywarn-value-discard", "-Xlint")
 

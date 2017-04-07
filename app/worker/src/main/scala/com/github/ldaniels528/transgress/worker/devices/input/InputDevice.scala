@@ -1,21 +1,16 @@
-package com.github.ldaniels528.transgress.worker.devices
+package com.github.ldaniels528.transgress.worker.devices.input
 
+import com.github.ldaniels528.transgress.worker.devices.Device
 import com.github.ldaniels528.transgress.worker.models.Statistics
 import com.github.ldaniels528.transgress.worker.{JobEventHandler, StatisticsGenerator}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Represents a generic input device
   * @author lawrence.daniels@gmail.com
   */
-trait InputDevice {
-
-  /**
-    * Closes the input device
-    * @return a completion promise
-    */
-  def close(): Future[Unit]
+trait InputDevice extends Device {
 
   /**
     * Pauses the input device
@@ -34,7 +29,7 @@ trait InputDevice {
     * @param handler the given [[JobEventHandler job event handler]]
     * @return a promise of the final [[Statistics statistics]]
     */
-  def start(handler: JobEventHandler)(implicit statsGen: StatisticsGenerator): Future[Statistics]
+  def start(handler: JobEventHandler)(implicit ec: ExecutionContext, statsGen: StatisticsGenerator): Future[Statistics]
 
   /**
     * Stops the input device

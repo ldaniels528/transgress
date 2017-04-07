@@ -1,4 +1,4 @@
-package com.github.ldaniels528.transgress.worker.devices
+package com.github.ldaniels528.transgress.worker.devices.output
 
 import com.github.ldaniels528.transgress.worker.JobEventHandler
 import io.scalajs.npm.mongodb.{MongoClient, WriteOptions}

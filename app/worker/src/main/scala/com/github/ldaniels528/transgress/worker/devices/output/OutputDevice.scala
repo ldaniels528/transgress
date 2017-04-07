@@ -1,6 +1,7 @@
-package com.github.ldaniels528.transgress.worker.devices
+package com.github.ldaniels528.transgress.worker.devices.output
 
 import com.github.ldaniels528.transgress.worker.JobEventHandler
+import com.github.ldaniels528.transgress.worker.devices.Device
 
 import scala.concurrent.Future
 import scala.scalajs.js
@@ -9,13 +10,7 @@ import scala.scalajs.js
   * Represents a generic output device
   * @author lawrence.daniels@gmail.com
   */
-trait OutputDevice {
-
-  /**
-    * Closes the device
-    * @return the completion promise
-    */
-  def close(): Future[Unit]
+trait OutputDevice extends Device {
 
   /**
     * Flushes the device

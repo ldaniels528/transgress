@@ -1,6 +1,6 @@
-Transgress
+Broadway.js
 ===========
-Transgress is a distributed JSON-centric processing server, and is optimized for high-speed data/file ingestion.
+Broadway is a distributed JSON-centric processing server, and is optimized for high-speed data/file ingestion.
 
 ## Motivation
 
@@ -8,26 +8,26 @@ Systems like [Apache Storm](http://storm.apache.org) or [Spark Streaming](http:/
 which are usually fed by a message-oriented middleware solution (e.g. [Apache Kafka](http://kafka.apache.org) or [Twitter Kestrel](https://github.com/twitter/kestrel)). 
 
 The challenge that I've identified, is that organizations usually have to build a homegrown solution for the high-speed 
-data/file ingestion into Kafka or Kestrel, which distracts them from their core focus. I've built Transgress to help provide 
+data/file ingestion into Kafka or Kestrel, which distracts them from their core focus. I've built Broadway to help provide 
 a solution to that challenge.
 
-## About Transgress
+## About Broadway
 
-As mentioned above, Transgress is a distributed actor-based processing server, and is optimized for high-speed data/file
-ingestion. As such, Transgress is meant to be a complement to systems like Storm, and not necessarily an alternative.
+As mentioned above, Broadway is a distributed actor-based processing server, and is optimized for high-speed data/file
+ingestion. As such, Broadway is meant to be a complement to systems like Storm, and not necessarily an alternative.
 
-Why the name Transgress? I chose the name Transgress (e.g. Transgress plays or musicals) because it's an actor-based system.
-As such you'll encounter terms such as anthology, director, narrative and producer once Transgress's documentation is complete.
+Why the name Broadway? I chose the name Broadway (e.g. Broadway plays or musicals) because it's an actor-based system.
+As such you'll encounter terms such as anthology, director, narrative and producer once Broadway's documentation is complete.
 
 ## Features
 
-Transgress provides three main functions:
+Broadway provides three main functions:
 
 * *Transporting of Files* via a built-in orchestration server, which also has the capability to download files and/or move files from one location (site) to another.
 * *Extract, Transform and Loading* and is tailored toward processing flat files (XML, JSON, CSV, delimited, fixed field-length, and hierarchical)
 * *File archival system*, which provides the capability for warehousing processed files.
 
-Additionally, since Transgress is a file-centric processing system, it supports features like:
+Additionally, since Broadway is a file-centric processing system, it supports features like:
 * File-processing dependencies (e.g. File "A" must be processed before Files "B" and "C" can be processed)
 * File-processing schedulers and triggers
   * Directories can be watched for specific file names (or match file names via regular expressions) which can then be processed and archived.
@@ -40,7 +40,7 @@ Additionally, since Transgress is a file-centric processing system, it supports 
 * File archival and retention strategies
 * Resource limits (e.g. limit the number of Kafka connections)
 
-Transgress is currently pre-alpha quality software, and although it will currently run simple topologies (anthologies), 
+Broadway is currently pre-alpha quality software, and although it will currently run simple topologies (anthologies), 
 there's still some work to do before it's ready for use by the general public. The current ETA is to have the system 
 ready for action by the end of May 2015.
 
@@ -52,8 +52,8 @@ ready for action by the end of May 2015.
 <a name="how-it-works"></a>
 ## How it works
 
-Transgress provides a construct called a narrative (e.g. story), which describes the flow for a single processing event.
-The proceeding example is a Transgress narrative that performs the following flow:
+Broadway provides a construct called a narrative (e.g. story), which describes the flow for a single processing event.
+The proceeding example is a Broadway narrative that performs the following flow:
 
 * Extracts historical stock quotes from a tabbed-delimited file.
 * Encodes the stock quotes as [Avro](avro.apache.org) records.

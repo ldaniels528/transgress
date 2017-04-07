@@ -5,6 +5,10 @@ import com.github.ldaniels528.transgress.models.{JobStates, StatisticsLike, Work
 import com.github.ldaniels528.transgress.rest._
 import com.github.ldaniels528.transgress.worker.JobProcessor._
 import com.github.ldaniels528.transgress.worker.devices._
+import com.github.ldaniels528.transgress.worker.devices.formats.DataFormatFactory
+import com.github.ldaniels528.transgress.worker.devices.input.InputDevice
+import com.github.ldaniels528.transgress.worker.devices.output.OutputDevice
+import com.github.ldaniels528.transgress.worker.devices.sources.{FileSource, Source}
 import com.github.ldaniels528.transgress.worker.models.Workflow._
 import com.github.ldaniels528.transgress.worker.models.{Statistics, Workflow}
 import com.github.ldaniels528.transgress.{CpuMonitor, LoggerFactory}
@@ -15,12 +19,13 @@ import io.scalajs.nodejs.{Error, setInterval, setTimeout}
 import io.scalajs.npm.mkdirp.Mkdirp
 import io.scalajs.util.DurationHelper._
 import io.scalajs.util.JsUnderOrHelper._
+import io.scalajs.util.OptionHelper._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.scalajs.js
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 /**
   * Job Processor
@@ -124,7 +129,11 @@ class JobProcessor(slave: Slave)(implicit config: WorkerConfig, jobDAO: JobClien
 
         // override the input source's path
         job.info(s"Overriding source ${workflow.input.name}'s path as '$inputFilePath'")
-        workflow.input.path = inputFilePath
+        workflow.input match {
+          case f: FileSource => f.path = inputFilePath
+          case _ =>
+            logger.warn(s"Input source type ${workflow.input.`type`} cannot be overridden")
+        }
         Some(workflow)
       case Failure(e) =>
         job.error(s"Invalid workflow: ${e.getMessage}", e)
@@ -158,11 +167,36 @@ class JobProcessor(slave: Slave)(implicit config: WorkerConfig, jobDAO: JobClien
     * @return a promise of the [[Statistics statistics]]
     */
   private def runWorkflow(workflow: Workflow)(implicit job: Job): Future[Statistics] = {
+
+    def attemptDataFormat(source: Source) = Try {
+      DataFormatFactory.getFormat(source.format)
+        .orDie(s"Unhandled data format '${source.format}' for source ${source.name}")
+    }
+
+    def attemptInputDevice(source: Source) = Try {
+      DeviceFactory.getInputDevice(source)
+        .orDie(s"Unhandled source type '${source.`type`}' for input source ${source.name}")
+    }
+
+    def attemptOutputDevice(source: Source) = Try {
+      DeviceFactory.getOutputDevice(source)
+        .orDie(s"Unhandled source type '${source.`type`}' for output source ${source.name}")
+    }
+
     val args = for {
-      inputDevice <- DeviceFactory.getInputDevice(workflow.input)
+      inputFormat <- attemptDataFormat(workflow.input)
+      inputDevice <- attemptInputDevice(workflow.input)
       outputDeviceAttempts = workflow.outputs map { source =>
-        source.path = ExpressionEvaluator.evaluate(source.path)
-        source.name -> DeviceFactory.getOutputDevice(source)
+        source match {
+          case f: FileSource => f.path = ExpressionEvaluator.evaluate(source.path)
+          case _ =>
+            logger.warn(s"Output source type ${workflow.input.`type`} cannot be overridden")
+        }
+        val outputDevice = for {
+          format <- attemptDataFormat(source)
+          device <- attemptOutputDevice(source)
+        } yield device
+        source.name -> outputDevice
       }
     } yield (inputDevice, outputDeviceAttempts)
 
