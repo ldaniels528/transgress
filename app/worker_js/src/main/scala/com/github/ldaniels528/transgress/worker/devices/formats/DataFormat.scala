@@ -13,7 +13,12 @@ import scala.scalajs.js
   */
 trait DataFormat {
 
-  def format(data: js.Any): js.Array[String]
+  /**
+    * Transforms the input data into its persistable state
+    * @param data the input data
+    * @return persistable data
+    */
+  def format(data: js.Any): Seq[String]
 
   /**
     * Setups event-driven text format processing

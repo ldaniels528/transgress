@@ -17,8 +17,8 @@ import scala.scalajs.js
   */
 class JSONFormat(prettify: Boolean = false) extends DataFormat {
 
-  def format(data: js.Any): js.Array[String] = {
-    js.Array(if (prettify) JSON.stringify(data, null, 4) else JSON.stringify(data))
+  override def format(data: js.Any): Seq[String] = {
+    Seq(if (prettify) JSON.stringify(data, null, 4) else JSON.stringify(data))
   }
 
   /**

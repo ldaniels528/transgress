@@ -23,11 +23,7 @@ object DeviceFactory {
   def getOutputDevice(source: Source)(implicit ec: ExecutionContext): Option[OutputDevice] = {
     source match {
       case fSource: FileSource => Option(new FileOutputDevice(fSource))
-      case mSource: MongoSource =>
-        for {
-          mongoConnect <- mSource.mongoConnect
-          collection <- mSource.mongoCollection
-        } yield new MongoDBOutputDevice(mongoConnect, collection)
+      case mSource: MongoSource => Option(new MongoDBOutputDevice(mSource))
       case _ => None
     }
   }

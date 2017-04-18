@@ -3,8 +3,7 @@ package com.github.ldaniels528.transgress.worker.devices.formats
 import com.github.ldaniels528.transgress.worker.models.Statistics
 import com.github.ldaniels528.transgress.worker.{JobEventHandler, StatisticsGenerator}
 import io.scalajs.nodejs.stream.Readable
-import io.scalajs.npm.csvtojson
-import io.scalajs.npm.csvtojson.ConverterOptions
+import io.scalajs.npm.csvtojson.{Converter, ConverterOptions}
 
 import scala.concurrent.Promise
 import scala.scalajs.js
@@ -17,7 +16,7 @@ import scala.scalajs.js
 class DelimitedFormat(delimiter: String, columnHeaders: Boolean = true) extends DataFormat {
   private var headers = Seq[String]()
 
-  override def format(data: js.Any): js.Array[String] = {
+  override def format(data: js.Any): Seq[String] = {
     val lines = js.Array[String]()
     val dict = data.asInstanceOf[js.Dictionary[js.Any]]
     if (columnHeaders && headers.isEmpty) {
@@ -34,12 +33,12 @@ class DelimitedFormat(delimiter: String, columnHeaders: Boolean = true) extends 
     */
   def start(stream: Readable)(implicit handler: JobEventHandler, statsGen: StatisticsGenerator): Promise[Statistics] = {
     val promise = Promise[Statistics]()
-    val converter = new csvtojson.Converter(new ConverterOptions(
+    val converter = new Converter(new ConverterOptions(
       constructResult = false,
       delimiter = delimiter
     )).onError(error => handler.onError(error))
-      .on("record_parsed", (data: js.Any) => handler.onData(data))
-      .on("end_parsed", (data: js.Any) => {
+      .onRecordParsed((data: js.Any) => handler.onData(data))
+      .onEndParsed((data: js.Any) => {
         handler.onFinish(data)
         promise.success(statsGen.update())
       })

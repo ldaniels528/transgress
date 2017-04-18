@@ -7,10 +7,13 @@ import com.github.ldaniels528.transgress.worker.models.Field
   * @author lawrence.daniels@gmail.com
   */
 case class MongoSource(name: String,
-                       var path: String,
+                       url: String,
+                       collection: String,
                        `type`: String,
                        format: String,
                        columnHeaders: Boolean,
-                       fields: Seq[Field],
-                       mongoConnect: Option[String],
-                       mongoCollection: Option[String]) extends Source
+                       fields: Seq[Field]) extends Source {
+
+  def path: String = url
+
+}

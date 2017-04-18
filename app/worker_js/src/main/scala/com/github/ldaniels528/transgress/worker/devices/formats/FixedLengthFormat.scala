@@ -17,9 +17,9 @@ import scala.scalajs.js
   */
 class FixedLengthFormat(fields: Seq[Field]) extends DataFormat {
 
-  override def format(data: js.Any): js.Array[String] = {
+  override def format(data: js.Any): Seq[String] = {
     val dict = data.asInstanceOf[js.Dictionary[js.Any]]
-    js.Array(fields.map(field => dict.get(field.name).map(_.toString).getOrElse("").sizeTo(field.length)).mkString)
+    Seq(fields.map(field => dict.get(field.name).map(_.toString).getOrElse("").sizeTo(field.length)).mkString)
   }
 
   /**

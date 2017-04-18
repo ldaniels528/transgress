@@ -6,7 +6,7 @@ import sbt._
 
 val appVersion = "0.1.1"
 val appScalaVersion = "2.12.1"
-val scalaJsIoVersion = "0.4.0-pre4"
+val scalaJsIOVersion = "0.4.0-pre4"
 
 scalacOptions ++= Seq("-deprecation", "-encoding", "UTF-8", "-feature", "-target:jvm-1.8", "-unchecked", "-Ywarn-adapted-args", "-Ywarn-value-discard", "-Xlint")
 
@@ -20,10 +20,10 @@ copyJS := {
   val watcher_dir = out_dir / "app" / "watcher" / "target" / "scala-2.12"
   val worker_dir = out_dir / "app" / "worker" / "target" / "scala-2.12"
 
-  val files1 = Seq("", ".map") map ("transgress-cli-fastopt.js" + _) map (s => (cli_dir / s, out_dir / s))
-  val files2 = Seq("", ".map") map ("transgress-supervisor-fastopt.js" + _) map (s => (supervisor_dir / s, out_dir / s))
-  val files3 = Seq("", ".map") map ("transgress-watcher-fastopt.js" + _) map (s => (watcher_dir / s, out_dir / s))
-  val files4 = Seq("", ".map") map ("transgress-worker-fastopt.js" + _) map (s => (worker_dir / s, out_dir / s))
+  val files1 = Seq("", ".map") map ("broadway-cli-fastopt.js" + _) map (s => (cli_dir / s, out_dir / s))
+  val files2 = Seq("", ".map") map ("broadway-supervisor-fastopt.js" + _) map (s => (supervisor_dir / s, out_dir / s))
+  val files3 = Seq("", ".map") map ("broadway-watcher-fastopt.js" + _) map (s => (watcher_dir / s, out_dir / s))
+  val files4 = Seq("", ".map") map ("broadway-worker-fastopt.js" + _) map (s => (worker_dir / s, out_dir / s))
   IO.copy(files1 ++ files2 ++ files3 ++ files4, overwrite = true)
 }
 
@@ -40,7 +40,7 @@ lazy val appSettings = Seq(
   scalaJSModuleKind := ModuleKind.CommonJSModule,
   autoCompilerPlugins := true,
   relativeSourceMaps := true,
-  homepage := Some(url("https://github.com/ldaniels528/transgress.js")),
+  homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
   resolvers += Resolver.sonatypeRepo("releases"))
 
 lazy val commonSettings = Seq(
@@ -49,7 +49,7 @@ lazy val commonSettings = Seq(
   scalaVersion := appScalaVersion,
   autoCompilerPlugins := true,
   relativeSourceMaps := true,
-  homepage := Some(url("https://github.com/ldaniels528/transgress.js")),
+  homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
   resolvers += Resolver.sonatypeRepo("releases"))
 
 lazy val moduleSettings = Seq(
@@ -59,7 +59,7 @@ lazy val moduleSettings = Seq(
   scalaJSModuleKind := ModuleKind.CommonJSModule,
   autoCompilerPlugins := true,
   relativeSourceMaps := true,
-  homepage := Some(url("https://github.com/ldaniels528/transgress.js")),
+  homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
   resolvers += Resolver.sonatypeRepo("releases"))
 
 lazy val uiSettings = Seq(
@@ -68,7 +68,7 @@ lazy val uiSettings = Seq(
   scalaVersion := appScalaVersion,
   autoCompilerPlugins := true,
   relativeSourceMaps := true,
-  homepage := Some(url("https://github.com/ldaniels528/transgress.js")),
+  homepage := Some(url("https://github.com/ldaniels528/broadway.js")),
   resolvers += Resolver.sonatypeRepo("releases"))
 
 lazy val common_core = (project in file("./app/common/core"))
@@ -76,26 +76,26 @@ lazy val common_core = (project in file("./app/common/core"))
   .settings(commonSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "transgress-common-core",
+    name := "broadway-common-core",
     organization := "com.github.ldaniels528",
     version := appVersion,
     libraryDependencies ++= Seq(
-      "io.scalajs" %%% "core" % scalaJsIoVersion
+      "io.scalajs" %%% "core" % scalaJsIOVersion
     ))
-	
+
 lazy val common_cli = (project in file("./app/common/cli"))
   .dependsOn(common_core)
   .enablePlugins(ScalaJSPlugin)
   .settings(commonSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "transgress-common-cli",
+    name := "broadway-common-cli",
     organization := "com.github.ldaniels528",
     version := appVersion,
     libraryDependencies ++= Seq(
-      "io.scalajs" %%% "core" % scalaJsIoVersion,
-      "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "moment" % scalaJsIoVersion
+      "io.scalajs" %%% "core" % scalaJsIOVersion,
+      "io.scalajs" %%% "nodejs" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "moment" % scalaJsIOVersion
     ))
 
 lazy val common_rest = (project in file("./app/common/rest"))
@@ -104,13 +104,25 @@ lazy val common_rest = (project in file("./app/common/rest"))
   .settings(commonSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "transgress-common-rest",
+    name := "broadway-common-rest",
     organization := "com.github.ldaniels528",
     version := appVersion,
     libraryDependencies ++= Seq(
-      "io.scalajs" %%% "core" % scalaJsIoVersion,
-      "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "request" % scalaJsIoVersion
+      "io.scalajs" %%% "core" % scalaJsIOVersion,
+      "io.scalajs" %%% "nodejs" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "request" % scalaJsIOVersion
+    ))
+
+lazy val common_worker = (project in file("./app/common/worker"))
+  .dependsOn(common_core)
+  .settings(commonSettings: _*)
+  .settings(testDependencies: _*)
+  .settings(
+    name := "broadway-common-worker",
+    organization := "com.github.ldaniels528",
+    version := appVersion,
+    libraryDependencies ++= Seq(
+
     ))
 
 lazy val client = (project in file("./app/client"))
@@ -120,16 +132,16 @@ lazy val client = (project in file("./app/client"))
   .settings(uiSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "transgress-web-client",
+    name := "broadway-web-client",
     organization := "com.github.ldaniels528",
     version := appVersion,
     scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
-      "io.scalajs" %%% "core" % scalaJsIoVersion,
-      "io.scalajs" %%% "dom-html" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "angular" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "angular-ui-router" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "angularjs-toaster" % scalaJsIoVersion
+      "io.scalajs" %%% "core" % scalaJsIOVersion,
+      "io.scalajs" %%% "dom-html" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "angular" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "angular-ui-router" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "angularjs-toaster" % scalaJsIOVersion
     ))
 
 lazy val cli = (project in file("./app/cli"))
@@ -139,16 +151,16 @@ lazy val cli = (project in file("./app/cli"))
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "transgress-cli",
+    name := "broadway-cli",
     organization := "com.github.ldaniels528",
     version := appVersion,
     scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
-      "io.scalajs" %%% "core" % scalaJsIoVersion,
-      "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "glob" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "otaat-repl" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "request" % scalaJsIoVersion
+      "io.scalajs" %%% "core" % scalaJsIOVersion,
+      "io.scalajs" %%% "nodejs" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "glob" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "otaat-repl" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "request" % scalaJsIOVersion
     ))
 
 lazy val supervisor = (project in file("./app/supervisor"))
@@ -158,20 +170,20 @@ lazy val supervisor = (project in file("./app/supervisor"))
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "transgress-supervisor",
+    name := "broadway-supervisor",
     organization := "com.github.ldaniels528",
     version := appVersion,
     scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
-      "io.scalajs" %%% "core" % scalaJsIoVersion,
-      "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "body-parser" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "express" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "express-fileupload" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "express-ws" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "mongodb" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "request" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "splitargs" % scalaJsIoVersion
+      "io.scalajs" %%% "core" % scalaJsIOVersion,
+      "io.scalajs" %%% "nodejs" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "body-parser" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "express" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "express-fileupload" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "express-ws" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "mongodb" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "request" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "splitargs" % scalaJsIOVersion
     ))
 
 lazy val watcher = (project in file("./app/watcher"))
@@ -181,60 +193,73 @@ lazy val watcher = (project in file("./app/watcher"))
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "transgress-watcher",
+    name := "broadway-watcher",
     organization := "com.github.ldaniels528",
     version := appVersion,
     scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
-      "io.scalajs" %%% "core" % scalaJsIoVersion,
-      "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "aws-s3" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "body-parser" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "express" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "glob" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "gzip-uncompressed-size" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "ip" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "mkdirp" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "moment" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "moment-duration-format" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "request" % scalaJsIoVersion
+      "io.scalajs" %%% "core" % scalaJsIOVersion,
+      "io.scalajs" %%% "nodejs" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "aws-s3" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "body-parser" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "express" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "glob" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "gzip-uncompressed-size" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "ip" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "mkdirp" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "moment" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "moment-duration-format" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "request" % scalaJsIOVersion
     ))
 
-lazy val worker = (project in file("./app/worker"))
-  .aggregate(common_core, common_rest, common_cli)
-  .dependsOn(common_core, common_rest, common_cli)
+lazy val worker_js = (project in file("./app/worker_js"))
+  .aggregate(common_core, common_rest, common_cli, common_worker)
+  .dependsOn(common_core, common_rest, common_cli, common_worker)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "transgress-worker",
+    name := "broadway-worker-js",
     organization := "com.github.ldaniels528",
     version := appVersion,
     scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
-      "io.scalajs" %%% "core" % scalaJsIoVersion,
-      "io.scalajs" %%% "nodejs" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "body-parser" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "csvtojson" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "express" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "glob" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "gzip-uncompressed-size" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "ip" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "mkdirp" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "moment" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "moment-duration-format" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "request" % scalaJsIoVersion,
-      "io.scalajs.npm" %%% "throttle" % scalaJsIoVersion
+      "io.scalajs" %%% "core" % scalaJsIOVersion,
+      "io.scalajs" %%% "nodejs" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "body-parser" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "csvtojson" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "express" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "glob" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "gzip-uncompressed-size" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "ip" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "mkdirp" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "moment" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "moment-duration-format" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "request" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "throttle" % scalaJsIOVersion
     ))
 
-lazy val transgress = (project in file("."))
-  .aggregate(cli, client, supervisor, watcher, worker)
-  .dependsOn(cli, client, supervisor, watcher, worker)
+lazy val worker_jvm = (project in file("./app/worker_jvm"))
+  .aggregate(common_core, common_worker)
+  .dependsOn(common_core, common_worker)
+  .settings(commonSettings: _*)
+  .settings(testDependencies: _*)
+  .settings(
+    name := "broadway-worker-jvm",
+    organization := "com.github.ldaniels528",
+    version := appVersion,
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-actor" % "2.5.0"
+    ))
+
+lazy val broadway = (project in file("."))
+  .aggregate(cli, client, supervisor, watcher, worker_js)
+  .dependsOn(cli, client, supervisor, watcher, worker_js)
   .enablePlugins(ScalaJSPlugin)
   .settings(appSettings: _*)
   .settings(testDependencies: _*)
   .settings(
-    name := "transgress-bundle",
+    name := "broadway-bundle",
     organization := "com.github.ldaniels528",
     version := appVersion,
     scalaVersion := appScalaVersion,
@@ -250,4 +275,4 @@ lazy val transgress = (project in file("."))
 addCommandAlias("fastOptJSCopy", ";fastOptJS;copyJS")
 
 // loads the jvm project at sbt startup
-onLoad in Global := (Command.process("project transgress", _: State)) compose (onLoad in Global).value
+onLoad in Global := (Command.process("project broadway", _: State)) compose (onLoad in Global).value

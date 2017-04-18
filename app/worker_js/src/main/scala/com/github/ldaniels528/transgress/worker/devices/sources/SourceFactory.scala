@@ -30,9 +30,9 @@ object SourceFactory {
         case "file" => FileSource(name, path, `type`, format, columnHeaders, fields)
         case "url" => URLSource(name, path, `type`, format, columnHeaders, fields)
         case "mongodb" =>
-          val mongoConnect = source.mongoConnect.toOption
-          val mongoCollection = source.mongoCollection.toOption
-          MongoSource(name, path, `type`, format, columnHeaders, fields, mongoConnect, mongoCollection)
+          val url = source.mongoConnect.orDie("No MongoDB URL specified")
+          val collection = source.mongoCollection.orDie("No MongoDB collection specified")
+          MongoSource(name, url, collection, `type`, format, columnHeaders, fields)
       }
     }
   }
