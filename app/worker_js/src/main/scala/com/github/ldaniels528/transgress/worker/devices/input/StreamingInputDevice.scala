@@ -48,7 +48,7 @@ abstract class StreamingInputDevice() extends InputDevice {
 
     // handle the input based on its format
     DataFormatFactory.getFormat(source.format) match {
-      case Some(format) => format.start(stream)(handler, statsGen).future
+      case Some(format) => format.start(stream)(handler, statsGen)
       case None => Future.failed(js.JavaScriptException(s"Unhandled data format '${source.format}' for source '${source.name}'"))
     }
   }

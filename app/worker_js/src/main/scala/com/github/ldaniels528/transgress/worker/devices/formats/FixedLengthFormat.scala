@@ -8,7 +8,7 @@ import io.scalajs.nodejs.os.OS
 import io.scalajs.nodejs.readline.{Readline, ReadlineOptions}
 import io.scalajs.nodejs.stream.Readable
 
-import scala.concurrent.Promise
+import scala.concurrent.{Future, Promise}
 import scala.scalajs.js
 
 /**
@@ -26,7 +26,7 @@ class FixedLengthFormat(fields: Seq[Field]) extends DataFormat {
     * Setups event-driven text format processing
     * @param handler the job event handler
     */
-  def start(stream: Readable)(implicit handler: JobEventHandler, statsGen: StatisticsGenerator): Promise[Statistics] = {
+  def start(stream: Readable)(implicit handler: JobEventHandler, statsGen: StatisticsGenerator): Future[Statistics] = {
     val promise = Promise[Statistics]()
     Readline.createInterface(new ReadlineOptions(input = stream))
       .on("error", (error: Error) => handler.onError(error))
@@ -37,7 +37,7 @@ class FixedLengthFormat(fields: Seq[Field]) extends DataFormat {
         handler.onFinish(OS.EOL)
         promise.success(statsGen.update())
       })
-    promise
+    promise.future
   }
 
   private def fromFixed(line: String): js.Dictionary[String] = {
