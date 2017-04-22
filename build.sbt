@@ -6,7 +6,7 @@ import sbt._
 
 val appVersion = "0.1.1"
 val appScalaVersion = "2.12.1"
-val scalaJsIOVersion = "0.4.0-pre4"
+val scalaJsIOVersion = "0.4.0-pre5"
 
 scalacOptions ++= Seq("-deprecation", "-encoding", "UTF-8", "-feature", "-target:jvm-1.8", "-unchecked", "-Ywarn-adapted-args", "-Ywarn-value-discard", "-Xlint")
 
@@ -235,6 +235,7 @@ lazy val worker_js = (project in file("./app/worker_js"))
       "io.scalajs.npm" %%% "mkdirp" % scalaJsIOVersion,
       "io.scalajs.npm" %%% "moment" % scalaJsIOVersion,
       "io.scalajs.npm" %%% "moment-duration-format" % scalaJsIOVersion,
+      "io.scalajs.npm" %%% "mongodb" % scalaJsIOVersion,
       "io.scalajs.npm" %%% "request" % scalaJsIOVersion,
       "io.scalajs.npm" %%% "throttle" % scalaJsIOVersion
     ))

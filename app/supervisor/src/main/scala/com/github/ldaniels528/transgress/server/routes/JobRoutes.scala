@@ -144,7 +144,7 @@ class JobRoutes(app: Application with WsRouting, db: Db)(implicit ec: ExecutionC
   private def workerRequest(endpoint: String, uri: String) = {
     val url = s"http://$endpoint/api/worker/$uri"
     logger.info(s"WORKER call ~> $url")
-    Client.getAsync(url).future map {
+    Client.getFuture(url) map {
       case (_, body) =>
         logger.info(s"WORKER RESPONSE ${JSON.stringify(body)}")
         body match {

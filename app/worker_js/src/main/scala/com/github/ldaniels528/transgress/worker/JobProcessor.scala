@@ -38,7 +38,7 @@ class JobProcessor(slave: Slave)(implicit config: WorkerConfig, jobDAO: JobClien
   private var active = 0
 
   // setup CPU load/idle monitoring
-  private val cpuInterval = setInterval(() => CpuMonitor.computeLoad().future foreach (this.cpuLoad = _), 1.seconds)
+  private val cpuInterval = setInterval(() => CpuMonitor.computeLoad() foreach (this.cpuLoad = _), 1.seconds)
 
   /**
     * Runs the job processor
@@ -154,7 +154,7 @@ class JobProcessor(slave: Slave)(implicit config: WorkerConfig, jobDAO: JobClien
           case Some(workflow) => Future.successful(workflow)
           case None =>
             logger.info(s"Loading workflow file '$workflowPath'...")
-            Fs.readFileAsync(workflowPath).future map (buf => JSON.parseAs[WorkflowLike](buf.toString))
+            Fs.readFileFuture(workflowPath) map (buf => JSON.parseAs[WorkflowLike](buf.toString))
         }
       case None =>
         Future.failed(js.JavaScriptException(s"No workflow specified for job ${job._id.orNull}"))
@@ -317,8 +317,8 @@ object JobProcessor {
           val newFilePath = Path.parse(newFile).dir.orDie(s"$state directory could not be determined for $input")
           for {
             _ <- task0
-            _ <- Mkdirp.async(newFilePath).future
-            _ <- Fs.renameAsync(input, newFile).future
+            _ <- Mkdirp.future(newFilePath)
+            _ <- Fs.renameFuture(input, newFile)
           } yield Some(newFile)
         case None =>
           task0.map(_ => None)

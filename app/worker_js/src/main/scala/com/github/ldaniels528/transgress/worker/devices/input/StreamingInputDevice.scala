@@ -55,9 +55,9 @@ abstract class StreamingInputDevice() extends InputDevice {
 
   private def getFileSize(implicit ec: ExecutionContext): Future[Double] = {
     if (isGzipped(source.path))
-      GUS.fromFileAsync(source.path).future
+      GUS.fromFileFuture(source.path)
     else
-      Fs.statAsync(source.path).future.map(_.size)
+      Fs.statFuture(source.path).map(_.size)
   }
 
   def isGzipped(path: String): Boolean = path.toLowerCase.endsWith(".gz")

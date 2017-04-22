@@ -5,7 +5,8 @@ import com.github.ldaniels528.transgress.worker.{JobEventHandler, StatisticsGene
 import io.scalajs.nodejs.stream.Readable
 import io.scalajs.npm.csvtojson.{Converter, ConverterOptions}
 
-import scala.concurrent.Promise
+import scala.language.existentials
+import scala.concurrent.{Future, Promise}
 import scala.scalajs.js
 
 /**
@@ -31,7 +32,7 @@ class DelimitedFormat(delimiter: String, columnHeaders: Boolean = true) extends 
     * Setups event-driven delimited text format processing
     * @param handler the job event handler
     */
-  def start(stream: Readable)(implicit handler: JobEventHandler, statsGen: StatisticsGenerator): Promise[Statistics] = {
+  def start(stream: Readable)(implicit handler: JobEventHandler, statsGen: StatisticsGenerator): Future[Statistics] = {
     val promise = Promise[Statistics]()
     val converter = new Converter(new ConverterOptions(
       constructResult = false,
@@ -44,7 +45,7 @@ class DelimitedFormat(delimiter: String, columnHeaders: Boolean = true) extends 
       })
 
     stream.pipe(converter)
-    promise
+    promise.future
   }
 
 }

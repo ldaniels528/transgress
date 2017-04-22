@@ -29,7 +29,7 @@ object GenericDAO {
     def findAll()(implicit ec: ExecutionContext): Future[js.Array[T]] = dao.find[T]().toArray().toFuture
 
     @inline
-    def findOneByID(id: String): Future[Option[T]] = dao.findOneAsync[T](doc("_id" $eq new ObjectID(id)))
+    def findOneByID(id: String): Future[Option[T]] = dao.findOneFuture[T](doc("_id" $eq new ObjectID(id)))
 
   }
 

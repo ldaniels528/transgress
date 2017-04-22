@@ -35,7 +35,7 @@ object Supervisor extends js.JSApp {
     logger.info("Loading MongoDB module...")
     val dbConnect = process.dbConnectOrDefault
     logger.info("Connecting to database '%s'...", dbConnect)
-    MongoClient.connectAsync(dbConnect).toFuture onComplete {
+    MongoClient.connectFuture(dbConnect) onComplete {
       case Success(db) =>
         implicit val _db = db
 

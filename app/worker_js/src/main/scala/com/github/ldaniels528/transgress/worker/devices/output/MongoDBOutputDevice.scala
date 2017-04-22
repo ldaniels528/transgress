@@ -2,7 +2,7 @@ package com.github.ldaniels528.transgress.worker.devices.output
 
 import com.github.ldaniels528.transgress.worker.JobEventHandler
 import com.github.ldaniels528.transgress.worker.devices.sources.MongoSource
-import io.scalajs.npm.mongodb.{MongoClient, WriteOptions}
+import io.scalajs.npm.mongodb._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.scalajs.js
@@ -13,7 +13,7 @@ import scala.scalajs.js
   */
 class MongoDBOutputDevice(source: MongoSource)(implicit ec: ExecutionContext)
   extends OutputDevice {
-  private val dbFuture = MongoClient.connectAsync(source.url).toFuture
+  private val dbFuture = MongoClient.connectFuture(source.url)
   private val collFuture = dbFuture.map(_.collection(source.collection))
   private var batch = js.Array[js.Any]()
   private val writeOptions = new WriteOptions(ordered = false)

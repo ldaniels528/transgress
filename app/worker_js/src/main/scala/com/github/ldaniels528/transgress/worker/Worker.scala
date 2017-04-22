@@ -133,7 +133,7 @@ object Worker extends js.JSApp {
           workflowPath <- config.workflowFile(name).toList
         } yield {
           logger.info(s"Downloading workflow '$name' ($workflowPath) from master...")
-          Fs.writeFileAsync(workflowPath, JSON.stringify(workflow, null, 4)).future
+          Fs.writeFileFuture(workflowPath, JSON.stringify(workflow, null, 4))
         }
       }
     }
@@ -177,8 +177,8 @@ object Worker extends js.JSApp {
     */
   private def ensureLocalDirectory(directory: String) = {
     for {
-      exists <- Fs.existsAsync(directory).future
-      _ <- if (!exists) Fs.mkdirAsync(directory).future else Future.successful({
+      exists <- Fs.existsFuture(directory)
+      _ <- if (!exists) Fs.mkdirFuture(directory) else Future.successful({
       })
     } yield (directory, exists)
   }

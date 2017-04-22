@@ -30,7 +30,7 @@ class FeedProcessor(config: WatcherConfig)(implicit feedDAO: FeedClient, jobDAO:
       (name, trigger) <- config.triggers getOrElse js.Dictionary()
       pattern <- trigger.patterns getOrElse js.Array()
     } {
-      Glob.async(s"${config.incomingDirectory}/$pattern").future onComplete {
+      Glob.future(s"${config.incomingDirectory}/$pattern") onComplete {
         case Success(files) =>
           for {
             file <- files if !isWatched(file)
@@ -46,7 +46,7 @@ class FeedProcessor(config: WatcherConfig)(implicit feedDAO: FeedClient, jobDAO:
 
   private def ensureCompleteFile(trigger: Trigger, file: String): Unit = {
     val outcome = for {
-      stats <- Fs.statAsync(file).future
+      stats <- Fs.statFuture(file)
       rawFeed = new Feed(filename = file, size = stats.size, mtime = stats.mtime.getTime())
       feed <- feedDAO.upsertFeed(rawFeed)
     } yield (feed, stats)

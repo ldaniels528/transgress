@@ -29,7 +29,7 @@ object SlaveDAO {
 
     @inline
     def findOneByHost(host: String): Future[Option[SlaveData]] = {
-      dao.findOneAsync[SlaveData](doc("host" $eq host))
+      dao.findOneFuture[SlaveData](doc("host" $eq host))
     }
 
     @inline

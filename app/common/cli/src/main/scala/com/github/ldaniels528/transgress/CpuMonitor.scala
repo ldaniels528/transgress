@@ -3,7 +3,7 @@ package com.github.ldaniels528.transgress
 import io.scalajs.nodejs.os.OS
 import io.scalajs.nodejs.setTimeout
 
-import scala.concurrent.Promise
+import scala.concurrent.{Future, Promise}
 import scala.scalajs.js
 import scala.scalajs.js.annotation.ScalaJSDefined
 
@@ -13,7 +13,7 @@ import scala.scalajs.js.annotation.ScalaJSDefined
   */
 object CpuMonitor {
 
-  def computeLoad(): Promise[Double] = {
+  def computeLoad(): Future[Double] = {
     val promise = Promise[Double]()
 
     // Grab first CPU Measure
@@ -35,7 +35,7 @@ object CpuMonitor {
       promise.success(cpu_%)
     }, 100)
 
-    promise
+    promise.future
   }
 
   /**

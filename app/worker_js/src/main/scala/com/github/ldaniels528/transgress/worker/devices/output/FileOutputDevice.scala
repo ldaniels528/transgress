@@ -20,7 +20,7 @@ class FileOutputDevice(source: FileSource)(implicit ec: ExecutionContext) extend
   private val format = DataFormatFactory.getFormat(source.format).
     orDie(s"Unhandled format '${source.format}' for source '${source.name}'")
 
-  override def close(): Future[Unit] = out.closeAsync.future
+  override def close(): Future[Unit] = out.closeFuture
 
   override def flush()(implicit jobEventHandler: JobEventHandler): Future[Int] = Future.successful(0)
 

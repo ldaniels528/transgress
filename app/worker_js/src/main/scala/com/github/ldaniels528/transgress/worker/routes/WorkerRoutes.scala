@@ -23,7 +23,7 @@ class WorkerRoutes(app: Application, jobTracker: JobFileTracking)(implicit jobCl
   ///////////////////////////////////////////////////////////////
 
   app.get("/api/worker/cpu", (request: Request, response: Response, next: NextFunction) => {
-    CpuMonitor.computeLoad().future onComplete {
+    CpuMonitor.computeLoad() onComplete {
       case Success(usage) => response.send(new CPUUsage(usage)); next()
       case Failure(e) => response.internalServerError(e); next()
     }

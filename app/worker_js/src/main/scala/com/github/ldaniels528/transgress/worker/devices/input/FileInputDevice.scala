@@ -18,8 +18,8 @@ class FileInputDevice(val source: FileSource)(implicit ec: ExecutionContext) ext
     if (isGzipped(source.path)) stream.pipe(Zlib.createGunzip()) else stream
   }
 
-  override def close(): Future[Unit] = stream.closeAsync.future
+  override def close(): Future[Unit] = stream.closeFuture
 
-  override def stop(): Future[Boolean] = stream.closeAsync.future.map(_ => true)
+  override def stop(): Future[Boolean] = stream.closeFuture.map(_ => true)
 
 }

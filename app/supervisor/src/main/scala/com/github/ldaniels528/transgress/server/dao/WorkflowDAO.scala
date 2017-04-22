@@ -29,7 +29,7 @@ object WorkflowDAO {
 
     @inline
     def findByName(name: String)(implicit ec: ExecutionContext): Future[Option[WorkflowData]] = {
-      dao.findOneAsync[WorkflowData](doc("name" $eq name))
+      dao.findOneFuture[WorkflowData](doc("name" $eq name))
     }
 
   }
