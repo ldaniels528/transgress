@@ -4,7 +4,7 @@ import com.github.ldaniels528.transgress.worker.models.Statistics
 import com.github.ldaniels528.transgress.worker.{JobEventHandler, StatisticsGenerator}
 import io.scalajs.nodejs.stream.Readable
 
-import scala.concurrent.Promise
+import scala.concurrent.Future
 import scala.scalajs.js
 
 /**
@@ -26,7 +26,7 @@ trait DataFormat {
     * @param handler  the [[JobEventHandler job event handler]]
     * @param statsGen the [[StatisticsGenerator statistics generator]]
     */
-  def start(stream: Readable)(implicit handler: JobEventHandler, statsGen: StatisticsGenerator): Promise[Statistics]
+  def start(stream: Readable)(implicit handler: JobEventHandler, statsGen: StatisticsGenerator): Future[Statistics]
 
   override def toString: String = getClass.getSimpleName
 
